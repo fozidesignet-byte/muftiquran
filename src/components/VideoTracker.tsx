@@ -137,9 +137,9 @@ const VideoTracker = () => {
     };
   }, []);
 
-  // Handle mouse up to stop selection
+  // Handle mouse up and touch end to stop selection
   useEffect(() => {
-    const handleMouseUp = () => {
+    const handleSelectionEnd = () => {
       setIsSelectingEditedMain(false);
       setIsSelectingEditedR(false);
       setIsSelectingEditedP(false);
@@ -149,8 +149,14 @@ const VideoTracker = () => {
       setSelectionMode(null);
     };
 
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => window.removeEventListener("mouseup", handleMouseUp);
+    window.addEventListener("mouseup", handleSelectionEnd);
+    window.addEventListener("touchend", handleSelectionEnd);
+    window.addEventListener("touchcancel", handleSelectionEnd);
+    return () => {
+      window.removeEventListener("mouseup", handleSelectionEnd);
+      window.removeEventListener("touchend", handleSelectionEnd);
+      window.removeEventListener("touchcancel", handleSelectionEnd);
+    };
   }, []);
 
   // EDITED SECTION - Main cell handlers
@@ -338,9 +344,12 @@ const VideoTracker = () => {
   }, [isSelectingCapturedP, selectionMode, capturedCells]);
 
   const openCommentDialog = useCallback((index: number, section: string) => {
+    // Only open if there's a comment for this cell
+    const hasComment = comments.some(c => c.cell_index === index && c.section === section);
+    if (!hasComment) return;
     setSelectedCellForComment({ index, section });
     setCommentDialogOpen(true);
-  }, []);
+  }, [comments]);
 
   const getExistingComment = useCallback(() => {
     if (!selectedCellForComment) return null;
@@ -496,16 +505,25 @@ const VideoTracker = () => {
       {/* Sticky Header with Counter Boxes */}
       <div className="sticky-header">
         <div className="max-w-full mx-auto px-2 pt-2">
-          {/* Header */}
-          <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
-            <div>
-              <h1 className="text-lg font-bold text-foreground">
-                📹 Video & Cassette Tracker
+          {/* Islamic Header Title */}
+          <div className="islamic-header">
+            <div className="islamic-pattern-left">☪</div>
+            <div className="text-center">
+              <h1 className="islamic-title">
+                Mufi Hajj Umer Idris Quran Tefseer
               </h1>
-              <p className="text-xs text-muted-foreground">
-                {user?.user_metadata?.display_name || user?.email} • {isAdmin ? "Admin" : "Viewer"}
+              <p className="islamic-subtitle">
+                Video Editing & Cassette Tracker
               </p>
             </div>
+            <div className="islamic-pattern-right">☪</div>
+          </div>
+
+          {/* User info and actions */}
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-2 mt-2">
+            <p className="text-xs text-muted-foreground">
+              {user?.user_metadata?.display_name || user?.email} • {isAdmin ? "Admin" : "Viewer"}
+            </p>
             <div className="flex gap-1 flex-wrap">
               <Button variant="outline" size="sm" onClick={() => navigate("/profile")} className="gap-1">
                 <Settings className="w-3 h-3" />

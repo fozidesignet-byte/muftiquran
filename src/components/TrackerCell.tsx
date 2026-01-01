@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { MessageSquare } from "lucide-react";
+import { useRef, useCallback } from "react";
 
 interface TrackerCellProps {
   number: number;
@@ -22,7 +23,7 @@ interface TrackerCellProps {
   // P handlers
   onPMouseDown?: () => void;
   onPMouseEnter?: () => void;
-  // Double click for comment
+  // Double click for comment (only view)
   onDoubleClick?: () => void;
 }
 
@@ -45,7 +46,10 @@ const TrackerCell = ({
   onPMouseEnter,
   onDoubleClick
 }: TrackerCellProps) => {
+  const touchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
   
+  // Mouse handlers for Main
   const handleMainMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0 || readOnly) return;
     onMainMouseDown?.();
@@ -56,15 +60,63 @@ const TrackerCell = ({
     onMainMouseEnter?.();
   };
 
+  // Double click only opens comment if there IS a comment
   const handleMainDoubleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    onDoubleClick?.();
+    if (hasComment) {
+      onDoubleClick?.();
+    }
   };
 
+  // Touch handlers for Main
+  const handleMainTouchStart = useCallback((e: React.TouchEvent) => {
+    if (readOnly) return;
+    const touch = e.touches[0];
+    touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+    
+    // Long press for comment view (only if has comment)
+    touchTimerRef.current = setTimeout(() => {
+      if (hasComment) {
+        onDoubleClick?.();
+      }
+    }, 500);
+    
+    // Immediate tap for selection
+    onMainMouseDown?.();
+  }, [readOnly, hasComment, onDoubleClick, onMainMouseDown]);
+
+  const handleMainTouchMove = useCallback((e: React.TouchEvent) => {
+    if (touchTimerRef.current) {
+      clearTimeout(touchTimerRef.current);
+      touchTimerRef.current = null;
+    }
+    
+    // Get touch position and find element under touch
+    const touch = e.touches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    
+    // If we're dragging over another cell's main area, trigger its enter handler
+    if (element?.classList.contains('cell-main-area') && isSelectingMain) {
+      const cellContainer = element.closest('.tracker-cell-container');
+      if (cellContainer) {
+        // Trigger mouse enter effect via a custom approach
+        onMainMouseEnter?.();
+      }
+    }
+  }, [isSelectingMain, onMainMouseEnter]);
+
+  const handleMainTouchEnd = useCallback(() => {
+    if (touchTimerRef.current) {
+      clearTimeout(touchTimerRef.current);
+      touchTimerRef.current = null;
+    }
+    touchStartPosRef.current = null;
+  }, []);
+
+  // Mouse handlers for R
   const handleRMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (e.button !== 0 || readOnly) return;
-    // R can only be selected if main is filled
     if (!isFilled) return;
     onRMouseDown?.();
   };
@@ -75,10 +127,17 @@ const TrackerCell = ({
     onRMouseEnter?.();
   };
 
+  // Touch handlers for R
+  const handleRTouchStart = useCallback((e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (readOnly || !isFilled) return;
+    onRMouseDown?.();
+  }, [readOnly, isFilled, onRMouseDown]);
+
+  // Mouse handlers for P
   const handlePMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (e.button !== 0 || readOnly) return;
-    // P can only be selected if main is filled
     if (!isFilled) return;
     onPMouseDown?.();
   };
@@ -89,6 +148,13 @@ const TrackerCell = ({
     onPMouseEnter?.();
   };
 
+  // Touch handlers for P
+  const handlePTouchStart = useCallback((e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (readOnly || !isFilled) return;
+    onPMouseDown?.();
+  }, [readOnly, isFilled, onPMouseDown]);
+
   return (
     <div
       className={cn(
@@ -97,7 +163,7 @@ const TrackerCell = ({
       )}
       title={
         readOnly 
-          ? "View only - Double-click to view comment" 
+          ? (hasComment ? "Double-click to view comment" : "View only")
           : "Click/drag: Main | R | P • Double-click for comment"
       }
     >
@@ -116,6 +182,9 @@ const TrackerCell = ({
         onMouseDown={handleMainMouseDown}
         onMouseEnter={handleMainMouseEnter}
         onDoubleClick={handleMainDoubleClick}
+        onTouchStart={handleMainTouchStart}
+        onTouchMove={handleMainTouchMove}
+        onTouchEnd={handleMainTouchEnd}
       >
         <span className={cn("cell-number", isFilled && type === "captured" && "text-white")}>
           {number}
@@ -132,6 +201,7 @@ const TrackerCell = ({
           )}
           onMouseDown={handleRMouseDown}
           onMouseEnter={handleRMouseEnter}
+          onTouchStart={handleRTouchStart}
           title={isFilled ? (type === "edited" ? "Re-Edit" : "Re-Capture") : "Fill main cell first"}
         >
           R
@@ -144,6 +214,7 @@ const TrackerCell = ({
           )}
           onMouseDown={handlePMouseDown}
           onMouseEnter={handlePMouseEnter}
+          onTouchStart={handlePTouchStart}
           title={isFilled ? "Paid" : "Fill main cell first"}
         >
           P

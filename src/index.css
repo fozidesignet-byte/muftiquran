@@ -101,6 +101,34 @@
 }
 
 @layer components {
+  /* Islamic Header Styling */
+  .islamic-header {
+    @apply flex items-center justify-center gap-4 py-3 px-4 rounded-lg mb-2;
+    background: linear-gradient(135deg, hsl(142 40% 25%) 0%, hsl(142 50% 35%) 50%, hsl(142 40% 25%) 100%);
+    border: 2px solid hsl(48 80% 50%);
+    box-shadow: 0 4px 20px hsl(0 0% 0% / 0.15), inset 0 1px 0 hsl(48 80% 60% / 0.3);
+  }
+
+  .islamic-pattern-left,
+  .islamic-pattern-right {
+    @apply text-2xl;
+    color: hsl(48 100% 65%);
+    text-shadow: 0 2px 4px hsl(0 0% 0% / 0.3);
+  }
+
+  .islamic-title {
+    @apply text-lg md:text-xl font-bold tracking-wide;
+    color: hsl(48 100% 90%);
+    text-shadow: 0 2px 4px hsl(0 0% 0% / 0.4);
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+
+  .islamic-subtitle {
+    @apply text-xs md:text-sm font-medium;
+    color: hsl(48 60% 80%);
+    text-shadow: 0 1px 2px hsl(0 0% 0% / 0.3);
+  }
+
   /* Sticky header for counter boxes */
   .sticky-header {
     position: sticky;
