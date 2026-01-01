@@ -44,6 +44,12 @@
     --counter-bg: 142 70% 45%;
     --counter-text: 0 0% 100%;
     --cell-border: 220 13% 75%;
+    
+    /* Counter box colors from design */
+    --box-edited: 45 80% 65%;
+    --box-green: 142 60% 40%;
+    --box-captured: 174 50% 35%;
+    --box-maroon: 0 45% 45%;
     --cell-hover: 220 10% 88%;
   }
 
@@ -86,6 +92,12 @@
     --counter-text: 0 0% 100%;
     --cell-border: 220 15% 30%;
     --cell-hover: 220 15% 25%;
+    
+    /* Counter box colors from design - dark mode */
+    --box-edited: 45 70% 55%;
+    --box-green: 142 50% 35%;
+    --box-captured: 174 45% 30%;
+    --box-maroon: 0 40% 40%;
   }
 }
 
@@ -304,5 +316,17 @@
   }
   .bg-paid-color {
     background-color: hsl(var(--paid-color));
+  }
+  .bg-box-edited {
+    background-color: hsl(var(--box-edited));
+  }
+  .bg-box-green {
+    background-color: hsl(var(--box-green));
+  }
+  .bg-box-captured {
+    background-color: hsl(var(--box-captured));
+  }
+  .bg-box-maroon {
+    background-color: hsl(var(--box-maroon));
   }
 }
