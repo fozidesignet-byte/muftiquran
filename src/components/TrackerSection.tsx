@@ -14,14 +14,22 @@ interface TrackerSectionProps {
   reActionCells: boolean[];
   paidCells: boolean[];
   comments: Comment[];
-  onToggleCell: (index: number) => void;
-  onToggleReAction: (index: number) => void;
-  onTogglePaid: (index: number) => void;
-  onOpenComment: (index: number) => void;
   readOnly?: boolean;
-  isSelecting?: boolean;
-  onMouseDown?: (index: number) => void;
-  onMouseEnter?: (index: number) => void;
+  // Separate selection states
+  isSelectingMain?: boolean;
+  isSelectingR?: boolean;
+  isSelectingP?: boolean;
+  // Main handlers
+  onMainMouseDown?: (index: number) => void;
+  onMainMouseEnter?: (index: number) => void;
+  // R handlers
+  onRMouseDown?: (index: number) => void;
+  onRMouseEnter?: (index: number) => void;
+  // P handlers
+  onPMouseDown?: (index: number) => void;
+  onPMouseEnter?: (index: number) => void;
+  // Comment handler
+  onOpenComment: (index: number) => void;
 }
 
 const TrackerSection = ({ 
@@ -31,14 +39,17 @@ const TrackerSection = ({
   reActionCells,
   paidCells,
   comments,
-  onToggleCell,
-  onToggleReAction,
-  onTogglePaid,
-  onOpenComment,
   readOnly = false,
-  isSelecting = false,
-  onMouseDown,
-  onMouseEnter
+  isSelectingMain = false,
+  isSelectingR = false,
+  isSelectingP = false,
+  onMainMouseDown,
+  onMainMouseEnter,
+  onRMouseDown,
+  onRMouseEnter,
+  onPMouseDown,
+  onPMouseEnter,
+  onOpenComment
 }: TrackerSectionProps) => {
   const hasComment = (index: number) => {
     return comments.some(c => c.cell_index === index && c.section === type);
@@ -63,12 +74,16 @@ const TrackerSection = ({
             type={type}
             hasComment={hasComment(num - 1)}
             readOnly={readOnly}
-            isSelecting={isSelecting}
-            onMouseDown={() => onMouseDown?.(num - 1)}
-            onMouseEnter={() => onMouseEnter?.(num - 1)}
-            onReActionClick={() => onToggleReAction(num - 1)}
-            onPaidClick={() => onTogglePaid(num - 1)}
-            onLongPress={() => onOpenComment(num - 1)}
+            isSelectingMain={isSelectingMain}
+            isSelectingR={isSelectingR}
+            isSelectingP={isSelectingP}
+            onMainMouseDown={() => onMainMouseDown?.(num - 1)}
+            onMainMouseEnter={() => onMainMouseEnter?.(num - 1)}
+            onRMouseDown={() => onRMouseDown?.(num - 1)}
+            onRMouseEnter={() => onRMouseEnter?.(num - 1)}
+            onPMouseDown={() => onPMouseDown?.(num - 1)}
+            onPMouseEnter={() => onPMouseEnter?.(num - 1)}
+            onDoubleClick={() => onOpenComment(num - 1)}
           />
         ))}
       </div>

@@ -54,9 +54,13 @@ const VideoTracker = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   
-  // Drag selection state
-  const [isSelectingEdited, setIsSelectingEdited] = useState(false);
-  const [isSelectingCaptured, setIsSelectingCaptured] = useState(false);
+  // Drag selection state - separate for main, R, P per section
+  const [isSelectingEditedMain, setIsSelectingEditedMain] = useState(false);
+  const [isSelectingEditedR, setIsSelectingEditedR] = useState(false);
+  const [isSelectingEditedP, setIsSelectingEditedP] = useState(false);
+  const [isSelectingCapturedMain, setIsSelectingCapturedMain] = useState(false);
+  const [isSelectingCapturedR, setIsSelectingCapturedR] = useState(false);
+  const [isSelectingCapturedP, setIsSelectingCapturedP] = useState(false);
   const [selectionMode, setSelectionMode] = useState<boolean | null>(null);
 
   // Load data from database
@@ -136,8 +140,12 @@ const VideoTracker = () => {
   // Handle mouse up to stop selection
   useEffect(() => {
     const handleMouseUp = () => {
-      setIsSelectingEdited(false);
-      setIsSelectingCaptured(false);
+      setIsSelectingEditedMain(false);
+      setIsSelectingEditedR(false);
+      setIsSelectingEditedP(false);
+      setIsSelectingCapturedMain(false);
+      setIsSelectingCapturedR(false);
+      setIsSelectingCapturedP(false);
       setSelectionMode(null);
     };
 
@@ -145,83 +153,189 @@ const VideoTracker = () => {
     return () => window.removeEventListener("mouseup", handleMouseUp);
   }, []);
 
-  const handleEditedMouseDown = useCallback((index: number) => {
+  // EDITED SECTION - Main cell handlers
+  const handleEditedMainMouseDown = useCallback((index: number) => {
     if (!isAdmin) return;
-    setIsSelectingEdited(true);
+    setIsSelectingEditedMain(true);
     const newMode = !editedCells[index];
     setSelectionMode(newMode);
     setEditedCells(prev => {
       const newCells = [...prev];
       newCells[index] = newMode;
+      // If deselecting main, also deselect R and P
+      if (!newMode) {
+        setReEditedCells(prevR => {
+          const newR = [...prevR];
+          newR[index] = false;
+          return newR;
+        });
+        setEditedPaidCells(prevP => {
+          const newP = [...prevP];
+          newP[index] = false;
+          return newP;
+        });
+      }
       return newCells;
     });
   }, [isAdmin, editedCells]);
 
-  const handleEditedMouseEnter = useCallback((index: number) => {
-    if (!isSelectingEdited || selectionMode === null) return;
+  const handleEditedMainMouseEnter = useCallback((index: number) => {
+    if (!isSelectingEditedMain || selectionMode === null) return;
     setEditedCells(prev => {
+      const newCells = [...prev];
+      newCells[index] = selectionMode;
+      // If deselecting, also deselect R and P
+      if (!selectionMode) {
+        setReEditedCells(prevR => {
+          const newR = [...prevR];
+          newR[index] = false;
+          return newR;
+        });
+        setEditedPaidCells(prevP => {
+          const newP = [...prevP];
+          newP[index] = false;
+          return newP;
+        });
+      }
+      return newCells;
+    });
+  }, [isSelectingEditedMain, selectionMode]);
+
+  // EDITED SECTION - R handlers
+  const handleEditedRMouseDown = useCallback((index: number) => {
+    if (!isAdmin || !editedCells[index]) return;
+    setIsSelectingEditedR(true);
+    const newMode = !reEditedCells[index];
+    setSelectionMode(newMode);
+    setReEditedCells(prev => {
+      const newCells = [...prev];
+      newCells[index] = newMode;
+      return newCells;
+    });
+  }, [isAdmin, editedCells, reEditedCells]);
+
+  const handleEditedRMouseEnter = useCallback((index: number) => {
+    if (!isSelectingEditedR || selectionMode === null || !editedCells[index]) return;
+    setReEditedCells(prev => {
       const newCells = [...prev];
       newCells[index] = selectionMode;
       return newCells;
     });
-  }, [isSelectingEdited, selectionMode]);
+  }, [isSelectingEditedR, selectionMode, editedCells]);
 
-  const handleCapturedMouseDown = useCallback((index: number) => {
+  // EDITED SECTION - P handlers
+  const handleEditedPMouseDown = useCallback((index: number) => {
+    if (!isAdmin || !editedCells[index]) return;
+    setIsSelectingEditedP(true);
+    const newMode = !editedPaidCells[index];
+    setSelectionMode(newMode);
+    setEditedPaidCells(prev => {
+      const newCells = [...prev];
+      newCells[index] = newMode;
+      return newCells;
+    });
+  }, [isAdmin, editedCells, editedPaidCells]);
+
+  const handleEditedPMouseEnter = useCallback((index: number) => {
+    if (!isSelectingEditedP || selectionMode === null || !editedCells[index]) return;
+    setEditedPaidCells(prev => {
+      const newCells = [...prev];
+      newCells[index] = selectionMode;
+      return newCells;
+    });
+  }, [isSelectingEditedP, selectionMode, editedCells]);
+
+  // CAPTURED SECTION - Main cell handlers
+  const handleCapturedMainMouseDown = useCallback((index: number) => {
     if (!isAdmin) return;
-    setIsSelectingCaptured(true);
+    setIsSelectingCapturedMain(true);
     const newMode = !capturedCells[index];
     setSelectionMode(newMode);
     setCapturedCells(prev => {
       const newCells = [...prev];
       newCells[index] = newMode;
+      // If deselecting main, also deselect R and P
+      if (!newMode) {
+        setReCapturedCells(prevR => {
+          const newR = [...prevR];
+          newR[index] = false;
+          return newR;
+        });
+        setPaidCells(prevP => {
+          const newP = [...prevP];
+          newP[index] = false;
+          return newP;
+        });
+      }
       return newCells;
     });
   }, [isAdmin, capturedCells]);
 
-  const handleCapturedMouseEnter = useCallback((index: number) => {
-    if (!isSelectingCaptured || selectionMode === null) return;
+  const handleCapturedMainMouseEnter = useCallback((index: number) => {
+    if (!isSelectingCapturedMain || selectionMode === null) return;
     setCapturedCells(prev => {
+      const newCells = [...prev];
+      newCells[index] = selectionMode;
+      // If deselecting, also deselect R and P
+      if (!selectionMode) {
+        setReCapturedCells(prevR => {
+          const newR = [...prevR];
+          newR[index] = false;
+          return newR;
+        });
+        setPaidCells(prevP => {
+          const newP = [...prevP];
+          newP[index] = false;
+          return newP;
+        });
+      }
+      return newCells;
+    });
+  }, [isSelectingCapturedMain, selectionMode]);
+
+  // CAPTURED SECTION - R handlers
+  const handleCapturedRMouseDown = useCallback((index: number) => {
+    if (!isAdmin || !capturedCells[index]) return;
+    setIsSelectingCapturedR(true);
+    const newMode = !reCapturedCells[index];
+    setSelectionMode(newMode);
+    setReCapturedCells(prev => {
+      const newCells = [...prev];
+      newCells[index] = newMode;
+      return newCells;
+    });
+  }, [isAdmin, capturedCells, reCapturedCells]);
+
+  const handleCapturedRMouseEnter = useCallback((index: number) => {
+    if (!isSelectingCapturedR || selectionMode === null || !capturedCells[index]) return;
+    setReCapturedCells(prev => {
       const newCells = [...prev];
       newCells[index] = selectionMode;
       return newCells;
     });
-  }, [isSelectingCaptured, selectionMode]);
+  }, [isSelectingCapturedR, selectionMode, capturedCells]);
 
-  const toggleReEdited = useCallback((index: number) => {
-    if (!isAdmin) return;
-    setReEditedCells(prev => {
-      const newCells = [...prev];
-      newCells[index] = !newCells[index];
-      return newCells;
-    });
-  }, [isAdmin]);
-
-  const toggleEditedPaid = useCallback((index: number) => {
-    if (!isAdmin) return;
-    setEditedPaidCells(prev => {
-      const newCells = [...prev];
-      newCells[index] = !newCells[index];
-      return newCells;
-    });
-  }, [isAdmin]);
-
-  const toggleReCaptured = useCallback((index: number) => {
-    if (!isAdmin) return;
-    setReCapturedCells(prev => {
-      const newCells = [...prev];
-      newCells[index] = !newCells[index];
-      return newCells;
-    });
-  }, [isAdmin]);
-
-  const toggleCapturedPaid = useCallback((index: number) => {
-    if (!isAdmin) return;
+  // CAPTURED SECTION - P handlers
+  const handleCapturedPMouseDown = useCallback((index: number) => {
+    if (!isAdmin || !capturedCells[index]) return;
+    setIsSelectingCapturedP(true);
+    const newMode = !paidCells[index];
+    setSelectionMode(newMode);
     setPaidCells(prev => {
       const newCells = [...prev];
-      newCells[index] = !newCells[index];
+      newCells[index] = newMode;
       return newCells;
     });
-  }, [isAdmin]);
+  }, [isAdmin, capturedCells, paidCells]);
+
+  const handleCapturedPMouseEnter = useCallback((index: number) => {
+    if (!isSelectingCapturedP || selectionMode === null || !capturedCells[index]) return;
+    setPaidCells(prev => {
+      const newCells = [...prev];
+      newCells[index] = selectionMode;
+      return newCells;
+    });
+  }, [isSelectingCapturedP, selectionMode, capturedCells]);
 
   const openCommentDialog = useCallback((index: number, section: string) => {
     setSelectedCellForComment({ index, section });
@@ -455,14 +569,17 @@ const VideoTracker = () => {
           reActionCells={reEditedCells}
           paidCells={editedPaidCells}
           comments={comments}
-          onToggleCell={handleEditedMouseDown}
-          onToggleReAction={toggleReEdited}
-          onTogglePaid={toggleEditedPaid}
-          onOpenComment={(index) => openCommentDialog(index, "edited")}
           readOnly={!isAdmin}
-          isSelecting={isSelectingEdited}
-          onMouseDown={handleEditedMouseDown}
-          onMouseEnter={handleEditedMouseEnter}
+          isSelectingMain={isSelectingEditedMain}
+          isSelectingR={isSelectingEditedR}
+          isSelectingP={isSelectingEditedP}
+          onMainMouseDown={handleEditedMainMouseDown}
+          onMainMouseEnter={handleEditedMainMouseEnter}
+          onRMouseDown={handleEditedRMouseDown}
+          onRMouseEnter={handleEditedRMouseEnter}
+          onPMouseDown={handleEditedPMouseDown}
+          onPMouseEnter={handleEditedPMouseEnter}
+          onOpenComment={(index) => openCommentDialog(index, "edited")}
         />
 
         <TrackerSection
@@ -472,14 +589,17 @@ const VideoTracker = () => {
           reActionCells={reCapturedCells}
           paidCells={paidCells}
           comments={comments}
-          onToggleCell={handleCapturedMouseDown}
-          onToggleReAction={toggleReCaptured}
-          onTogglePaid={toggleCapturedPaid}
-          onOpenComment={(index) => openCommentDialog(index, "captured")}
           readOnly={!isAdmin}
-          isSelecting={isSelectingCaptured}
-          onMouseDown={handleCapturedMouseDown}
-          onMouseEnter={handleCapturedMouseEnter}
+          isSelectingMain={isSelectingCapturedMain}
+          isSelectingR={isSelectingCapturedR}
+          isSelectingP={isSelectingCapturedP}
+          onMainMouseDown={handleCapturedMainMouseDown}
+          onMainMouseEnter={handleCapturedMainMouseEnter}
+          onRMouseDown={handleCapturedRMouseDown}
+          onRMouseEnter={handleCapturedRMouseEnter}
+          onPMouseDown={handleCapturedPMouseDown}
+          onPMouseEnter={handleCapturedPMouseEnter}
+          onOpenComment={(index) => openCommentDialog(index, "captured")}
         />
       </div>
 
