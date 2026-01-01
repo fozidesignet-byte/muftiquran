@@ -48,11 +48,26 @@ const TrackerCell = ({
 }: TrackerCellProps) => {
   const touchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingClickRef = useRef<(() => void) | null>(null);
   
-  // Mouse handlers for Main
+  // Mouse handlers for Main - delay to detect double-click
   const handleMainMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0 || readOnly) return;
-    onMainMouseDown?.();
+    
+    // Store the action but delay execution to check for double-click
+    pendingClickRef.current = () => onMainMouseDown?.();
+    
+    // Clear any existing timer
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+    }
+    
+    // Delay single click to allow double-click detection
+    clickTimerRef.current = setTimeout(() => {
+      pendingClickRef.current?.();
+      pendingClickRef.current = null;
+    }, 200);
   };
 
   const handleMainMouseEnter = () => {
@@ -60,9 +75,17 @@ const TrackerCell = ({
     onMainMouseEnter?.();
   };
 
-  // Double click opens comment dialog (admin can add/edit/delete)
+  // Double click opens comment dialog - cancel the pending single click
   const handleMainDoubleClick = (e: React.MouseEvent) => {
     e.preventDefault();
+    
+    // Cancel the pending single click action
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
+    pendingClickRef.current = null;
+    
     onDoubleClick?.();
   };
 
