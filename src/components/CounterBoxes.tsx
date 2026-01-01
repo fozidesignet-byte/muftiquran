@@ -6,23 +6,21 @@ interface CounterBoxesProps {
   reCapturedCount: number;
   capturedPaidCount: number;
 }
-
 const CounterBoxes = ({
   editedCount,
   reEditedCount,
   editedPaidCount,
   capturedCount,
   reCapturedCount,
-  capturedPaidCount,
+  capturedPaidCount
 }: CounterBoxesProps) => {
-  return (
-    <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+  return <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
       {/* Edited Section Counters */}
       <div className="bg-box-edited p-2 md:p-3 rounded-md text-center shadow-sm">
         <div className="text-xl md:text-2xl font-bold text-white">{editedCount}</div>
         <div className="text-[10px] md:text-xs font-medium text-white/90">Edited</div>
       </div>
-      <div className="p-2 md:p-3 rounded-md text-center shadow-sm bg-box-green">
+      <div className="p-2 md:p-3 rounded-md text-center shadow-sm bg-box-green border-destructive">
         <div className="text-xl md:text-2xl font-bold text-white">{reEditedCount}</div>
         <div className="text-[10px] md:text-xs font-medium text-white/90">Re-Edit</div>
       </div>
@@ -44,8 +42,6 @@ const CounterBoxes = ({
         <div className="text-xl md:text-2xl font-bold text-white">{capturedPaidCount}</div>
         <div className="text-[10px] md:text-xs font-medium text-white/90">Capt Paid</div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default CounterBoxes;
