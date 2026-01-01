@@ -8,13 +8,22 @@ interface TrackerCellProps {
   isPaid?: boolean;
   type: "edited" | "captured";
   hasComment?: boolean;
-  isSelecting?: boolean;
   readOnly?: boolean;
-  onMouseDown?: () => void;
-  onMouseEnter?: () => void;
-  onReActionClick?: () => void;
-  onPaidClick?: () => void;
-  onLongPress?: () => void;
+  // Separate selection states for each part
+  isSelectingMain?: boolean;
+  isSelectingR?: boolean;
+  isSelectingP?: boolean;
+  // Main cell handlers
+  onMainMouseDown?: () => void;
+  onMainMouseEnter?: () => void;
+  // R handlers
+  onRMouseDown?: () => void;
+  onRMouseEnter?: () => void;
+  // P handlers
+  onPMouseDown?: () => void;
+  onPMouseEnter?: () => void;
+  // Double click for comment
+  onDoubleClick?: () => void;
 }
 
 const TrackerCell = ({ 
@@ -24,104 +33,118 @@ const TrackerCell = ({
   isPaid = false, 
   type, 
   hasComment = false,
-  isSelecting = false,
   readOnly = false,
-  onMouseDown,
-  onMouseEnter,
-  onReActionClick,
-  onPaidClick,
-  onLongPress
+  isSelectingMain = false,
+  isSelectingR = false,
+  isSelectingP = false,
+  onMainMouseDown,
+  onMainMouseEnter,
+  onRMouseDown,
+  onRMouseEnter,
+  onPMouseDown,
+  onPMouseEnter,
+  onDoubleClick
 }: TrackerCellProps) => {
-  let longPressTimer: NodeJS.Timeout | null = null;
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    
-    longPressTimer = setTimeout(() => {
-      if (onLongPress) {
-        onLongPress();
-      }
-      longPressTimer = null;
-    }, 500);
-
-    if (!readOnly && onMouseDown) {
-      onMouseDown();
-    }
+  
+  const handleMainMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0 || readOnly) return;
+    onMainMouseDown?.();
   };
 
-  const handleMouseUp = () => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
-    }
+  const handleMainMouseEnter = () => {
+    if (readOnly || !isSelectingMain) return;
+    onMainMouseEnter?.();
   };
 
-  const handleMouseLeave = () => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
-    }
+  const handleMainDoubleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onDoubleClick?.();
   };
 
-  const handleReActionClick = (e: React.MouseEvent) => {
+  const handleRMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!readOnly && onReActionClick) {
-      onReActionClick();
-    }
+    if (e.button !== 0 || readOnly) return;
+    // R can only be selected if main is filled
+    if (!isFilled) return;
+    onRMouseDown?.();
   };
 
-  const handlePaidClick = (e: React.MouseEvent) => {
+  const handleRMouseEnter = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!readOnly && onPaidClick) {
-      onPaidClick();
-    }
+    if (readOnly || !isSelectingR || !isFilled) return;
+    onRMouseEnter?.();
+  };
+
+  const handlePMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (e.button !== 0 || readOnly) return;
+    // P can only be selected if main is filled
+    if (!isFilled) return;
+    onPMouseDown?.();
+  };
+
+  const handlePMouseEnter = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (readOnly || !isSelectingP || !isFilled) return;
+    onPMouseEnter?.();
   };
 
   return (
     <div
       className={cn(
         "tracker-cell-container",
-        isFilled && type === "edited" && "edited-filled",
-        isFilled && type === "captured" && "captured-filled",
         readOnly && "cursor-default"
       )}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
-      onMouseEnter={!readOnly && isSelecting ? onMouseEnter : undefined}
       title={
         readOnly 
-          ? "View only - Long press to view comment" 
-          : "Click/drag to toggle • Long press for comment"
+          ? "View only - Double-click to view comment" 
+          : "Click/drag: Main | R | P • Double-click for comment"
       }
     >
-      {/* Cell number */}
-      <span className="cell-number">{number}</span>
-      
       {/* Comment indicator */}
       {hasComment && (
         <MessageSquare className="comment-indicator" />
       )}
       
-      {/* R and P indicators inside the cell */}
-      <div className="cell-indicators">
+      {/* Top half: Main cell with number */}
+      <div
+        className={cn(
+          "cell-main-area",
+          isFilled && type === "edited" && "edited-filled",
+          isFilled && type === "captured" && "captured-filled"
+        )}
+        onMouseDown={handleMainMouseDown}
+        onMouseEnter={handleMainMouseEnter}
+        onDoubleClick={handleMainDoubleClick}
+      >
+        <span className={cn("cell-number", isFilled && type === "captured" && "text-white")}>
+          {number}
+        </span>
+      </div>
+      
+      {/* Bottom half: R and P side by side */}
+      <div className="cell-bottom-row">
         <div
           className={cn(
-            "indicator-r",
-            isReActionFilled && "active"
+            "cell-r-area",
+            isReActionFilled && "active",
+            !isFilled && "disabled"
           )}
-          onClick={handleReActionClick}
-          title={type === "edited" ? "Re-Edit" : "Re-Capture"}
+          onMouseDown={handleRMouseDown}
+          onMouseEnter={handleRMouseEnter}
+          title={isFilled ? (type === "edited" ? "Re-Edit" : "Re-Capture") : "Fill main cell first"}
         >
           R
         </div>
         <div
           className={cn(
-            "indicator-p",
-            isPaid && "active"
+            "cell-p-area",
+            isPaid && "active",
+            !isFilled && "disabled"
           )}
-          onClick={handlePaidClick}
-          title="Paid"
+          onMouseDown={handlePMouseDown}
+          onMouseEnter={handlePMouseEnter}
+          title={isFilled ? "Paid" : "Fill main cell first"}
         >
           P
         </div>
