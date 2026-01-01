@@ -60,12 +60,10 @@ const TrackerCell = ({
     onMainMouseEnter?.();
   };
 
-  // Double click only opens comment if there IS a comment
+  // Double click opens comment dialog (admin can add/edit/delete)
   const handleMainDoubleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (hasComment) {
-      onDoubleClick?.();
-    }
+    onDoubleClick?.();
   };
 
   // Touch handlers for Main
@@ -74,11 +72,9 @@ const TrackerCell = ({
     const touch = e.touches[0];
     touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
     
-    // Long press for comment view (only if has comment)
+    // Long press for comment dialog (admin can add/edit/delete)
     touchTimerRef.current = setTimeout(() => {
-      if (hasComment) {
-        onDoubleClick?.();
-      }
+      onDoubleClick?.();
     }, 500);
     
     // Immediate tap for selection
