@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      cell_comments: {
+        Row: {
+          cell_index: number
+          comment: string
+          created_at: string
+          created_by: string | null
+          created_by_email: string | null
+          id: string
+          section: string
+          updated_at: string
+        }
+        Insert: {
+          cell_index: number
+          comment: string
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          id?: string
+          section: string
+          updated_at?: string
+        }
+        Update: {
+          cell_index?: number
+          comment?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          id?: string
+          section?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -36,26 +69,65 @@ export type Database = {
         Row: {
           captured_cells: boolean[]
           edited_cells: boolean[]
+          edited_paid_cells: boolean[]
           id: string
           paid_cells: boolean[]
+          re_captured_cells: boolean[]
+          re_edited_cells: boolean[]
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           captured_cells?: boolean[]
           edited_cells?: boolean[]
+          edited_paid_cells?: boolean[]
           id?: string
           paid_cells?: boolean[]
+          re_captured_cells?: boolean[]
+          re_edited_cells?: boolean[]
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           captured_cells?: boolean[]
           edited_cells?: boolean[]
+          edited_paid_cells?: boolean[]
           id?: string
           paid_cells?: boolean[]
+          re_captured_cells?: boolean[]
+          re_edited_cells?: boolean[]
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      tracker_history: {
+        Row: {
+          action: string
+          cell_index: number
+          changed_at: string
+          changed_by: string | null
+          changed_by_email: string | null
+          id: string
+          section: string
+        }
+        Insert: {
+          action: string
+          cell_index: number
+          changed_at?: string
+          changed_by?: string | null
+          changed_by_email?: string | null
+          id?: string
+          section: string
+        }
+        Update: {
+          action?: string
+          cell_index?: number
+          changed_at?: string
+          changed_by?: string | null
+          changed_by_email?: string | null
+          id?: string
+          section?: string
         }
         Relationships: []
       }
