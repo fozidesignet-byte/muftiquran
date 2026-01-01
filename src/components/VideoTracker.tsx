@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import TrackerSection from "./TrackerSection";
 import CounterBoxes from "./CounterBoxes";
 import CommentDialog from "./CommentDialog";
-import HistoryPanel from "./HistoryPanel";
+import ResetPasswordDialog from "./ResetPasswordDialog";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Save, Download, LogOut, FileSpreadsheet, History } from "lucide-react";
+import { RotateCcw, Save, Download, LogOut, FileSpreadsheet, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,15 +16,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-interface TrackerData {
-  editedCells: boolean[];
-  capturedCells: boolean[];
-  paidCells: boolean[];
-  reEditedCells: boolean[];
-  editedPaidCells: boolean[];
-  reCapturedCells: boolean[];
-}
 
 interface Comment {
   id: string;
@@ -36,37 +28,28 @@ interface Comment {
   updated_at: string;
 }
 
-interface HistoryEntry {
-  id: string;
-  cell_index: number;
-  section: string;
-  action: string;
-  changed_by_email: string;
-  changed_at: string;
-}
-
 const VideoTracker = () => {
   const { toast } = useToast();
   const { user, isAdmin, signOut } = useAuth();
+  const navigate = useNavigate();
   
   // Main cells
   const [editedCells, setEditedCells] = useState<boolean[]>(Array(180).fill(false));
   const [capturedCells, setCapturedCells] = useState<boolean[]>(Array(180).fill(false));
   const [paidCells, setPaidCells] = useState<boolean[]>(Array(180).fill(false));
   
-  // New cells for re-action and paid
+  // Re-action and paid cells
   const [reEditedCells, setReEditedCells] = useState<boolean[]>(Array(180).fill(false));
   const [editedPaidCells, setEditedPaidCells] = useState<boolean[]>(Array(180).fill(false));
   const [reCapturedCells, setReCapturedCells] = useState<boolean[]>(Array(180).fill(false));
   
-  // Comments and history
+  // Comments
   const [comments, setComments] = useState<Comment[]>([]);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
   
-  // Comment dialog state
+  // Dialog states
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const [selectedCellForComment, setSelectedCellForComment] = useState<{ index: number; section: string } | null>(null);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -80,15 +63,13 @@ const VideoTracker = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [trackerResult, commentsResult, historyResult] = await Promise.all([
+        const [trackerResult, commentsResult] = await Promise.all([
           supabase.from("tracker_data").select("*").limit(1).maybeSingle(),
           supabase.from("cell_comments").select("*").order("created_at", { ascending: false }),
-          supabase.from("tracker_history").select("*").order("changed_at", { ascending: false }).limit(100),
         ]);
 
         if (trackerResult.error) throw trackerResult.error;
         if (commentsResult.error) throw commentsResult.error;
-        if (historyResult.error) throw historyResult.error;
 
         if (trackerResult.data) {
           setEditedCells(trackerResult.data.edited_cells || Array(180).fill(false));
@@ -100,7 +81,6 @@ const VideoTracker = () => {
         }
         
         setComments(commentsResult.data || []);
-        setHistory(historyResult.data || []);
       } catch (error) {
         console.error("Error loading data:", error);
         toast({
@@ -124,7 +104,6 @@ const VideoTracker = () => {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tracker_data' },
         (payload) => {
-          console.log('Tracker data changed:', payload);
           if (payload.new && typeof payload.new === 'object') {
             const data = payload.new as any;
             setEditedCells(data.edited_cells || Array(180).fill(false));
@@ -138,18 +117,8 @@ const VideoTracker = () => {
       )
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'tracker_history' },
-        (payload) => {
-          if (payload.new) {
-            setHistory(prev => [payload.new as HistoryEntry, ...prev].slice(0, 100));
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
         { event: '*', schema: 'public', table: 'cell_comments' },
         async () => {
-          // Refresh comments
           const { data } = await supabase
             .from("cell_comments")
             .select("*")
@@ -176,21 +145,6 @@ const VideoTracker = () => {
     return () => window.removeEventListener("mouseup", handleMouseUp);
   }, []);
 
-  const logHistory = useCallback(async (cellIndex: number, section: string, action: string) => {
-    if (!user) return;
-    try {
-      await supabase.from("tracker_history").insert({
-        cell_index: cellIndex,
-        section,
-        action,
-        changed_by: user.id,
-        changed_by_email: user.email,
-      });
-    } catch (error) {
-      console.error("Error logging history:", error);
-    }
-  }, [user]);
-
   const handleEditedMouseDown = useCallback((index: number) => {
     if (!isAdmin) return;
     setIsSelectingEdited(true);
@@ -201,8 +155,7 @@ const VideoTracker = () => {
       newCells[index] = newMode;
       return newCells;
     });
-    logHistory(index, "edited", newMode ? "Marked as edited" : "Unmarked edited");
-  }, [isAdmin, editedCells, logHistory]);
+  }, [isAdmin, editedCells]);
 
   const handleEditedMouseEnter = useCallback((index: number) => {
     if (!isSelectingEdited || selectionMode === null) return;
@@ -223,8 +176,7 @@ const VideoTracker = () => {
       newCells[index] = newMode;
       return newCells;
     });
-    logHistory(index, "captured", newMode ? "Marked as captured" : "Unmarked captured");
-  }, [isAdmin, capturedCells, logHistory]);
+  }, [isAdmin, capturedCells]);
 
   const handleCapturedMouseEnter = useCallback((index: number) => {
     if (!isSelectingCaptured || selectionMode === null) return;
@@ -239,45 +191,37 @@ const VideoTracker = () => {
     if (!isAdmin) return;
     setReEditedCells(prev => {
       const newCells = [...prev];
-      const newValue = !newCells[index];
-      newCells[index] = newValue;
-      logHistory(index, "re_edited", newValue ? "Marked as re-edit" : "Unmarked re-edit");
+      newCells[index] = !newCells[index];
       return newCells;
     });
-  }, [isAdmin, logHistory]);
+  }, [isAdmin]);
 
   const toggleEditedPaid = useCallback((index: number) => {
     if (!isAdmin) return;
     setEditedPaidCells(prev => {
       const newCells = [...prev];
-      const newValue = !newCells[index];
-      newCells[index] = newValue;
-      logHistory(index, "edited_paid", newValue ? "Marked as edited paid" : "Unmarked edited paid");
+      newCells[index] = !newCells[index];
       return newCells;
     });
-  }, [isAdmin, logHistory]);
+  }, [isAdmin]);
 
   const toggleReCaptured = useCallback((index: number) => {
     if (!isAdmin) return;
     setReCapturedCells(prev => {
       const newCells = [...prev];
-      const newValue = !newCells[index];
-      newCells[index] = newValue;
-      logHistory(index, "re_captured", newValue ? "Marked as re-capture" : "Unmarked re-capture");
+      newCells[index] = !newCells[index];
       return newCells;
     });
-  }, [isAdmin, logHistory]);
+  }, [isAdmin]);
 
   const toggleCapturedPaid = useCallback((index: number) => {
     if (!isAdmin) return;
     setPaidCells(prev => {
       const newCells = [...prev];
-      const newValue = !newCells[index];
-      newCells[index] = newValue;
-      logHistory(index, "captured_paid", newValue ? "Marked as captured paid" : "Unmarked captured paid");
+      newCells[index] = !newCells[index];
       return newCells;
     });
-  }, [isAdmin, logHistory]);
+  }, [isAdmin]);
 
   const openCommentDialog = useCallback((index: number, section: string) => {
     setSelectedCellForComment({ index, section });
@@ -337,10 +281,7 @@ const VideoTracker = () => {
   const editedPaidCount = editedPaidCells.filter(Boolean).length;
   const reCapturedCount = reCapturedCells.filter(Boolean).length;
 
-  const handleReset = async () => {
-    if (!isAdmin) return;
-    if (!confirm("Are you sure you want to reset all data? This cannot be undone.")) return;
-    
+  const handleResetConfirmed = async () => {
     setSaving(true);
     try {
       const { error } = await supabase
@@ -437,76 +378,76 @@ const VideoTracker = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-2">
-      {/* Header */}
-      <div className="max-w-full mx-auto mb-2">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">
-              📹 Video & Cassette Tracker
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              {user?.email} • {isAdmin ? "Admin" : "Viewer"}
-            </p>
+    <div className="min-h-screen bg-background">
+      {/* Sticky Header with Counter Boxes */}
+      <div className="sticky-header">
+        <div className="max-w-full mx-auto px-2 pt-2">
+          {/* Header */}
+          <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+            <div>
+              <h1 className="text-lg font-bold text-foreground">
+                📹 Video & Cassette Tracker
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                {user?.user_metadata?.display_name || user?.email} • {isAdmin ? "Admin" : "Viewer"}
+              </p>
+            </div>
+            <div className="flex gap-1 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => navigate("/profile")} className="gap-1">
+                <Settings className="w-3 h-3" />
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-1">
+                    <Download className="w-3 h-3" />
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={handleExportCSV}>
+                    <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    Export as CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportExcel}>
+                    <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    Export as Excel
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              {isAdmin && (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleSave} className="gap-1" disabled={saving}>
+                    <Save className="w-3 h-3" />
+                    {saving ? "..." : "Save"}
+                  </Button>
+                  <Button variant="destructive" size="sm" onClick={() => setResetDialogOpen(true)} className="gap-1" disabled={saving}>
+                    <RotateCcw className="w-3 h-3" />
+                    Reset
+                  </Button>
+                </>
+              )}
+              
+              <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-1">
+                <LogOut className="w-3 h-3" />
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-1 flex-wrap">
-            <Button variant="outline" size="sm" onClick={() => setShowHistory(true)} className="gap-1">
-              <History className="w-3 h-3" />
-              History
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1">
-                  <Download className="w-3 h-3" />
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={handleExportCSV}>
-                  <FileSpreadsheet className="w-4 h-4 mr-2" />
-                  Export as CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportExcel}>
-                  <FileSpreadsheet className="w-4 h-4 mr-2" />
-                  Export as Excel
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            {isAdmin && (
-              <>
-                <Button variant="outline" size="sm" onClick={handleSave} className="gap-1" disabled={saving}>
-                  <Save className="w-3 h-3" />
-                  {saving ? "..." : "Save"}
-                </Button>
-                <Button variant="destructive" size="sm" onClick={handleReset} className="gap-1" disabled={saving}>
-                  <RotateCcw className="w-3 h-3" />
-                  Reset
-                </Button>
-              </>
-            )}
-            
-            <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-1">
-              <LogOut className="w-3 h-3" />
-            </Button>
-          </div>
+
+          {/* Counter Boxes */}
+          <CounterBoxes
+            editedCount={editedCount}
+            reEditedCount={reEditedCount}
+            editedPaidCount={editedPaidCount}
+            capturedCount={capturedCount}
+            reCapturedCount={reCapturedCount}
+            capturedPaidCount={paidCount}
+          />
         </div>
       </div>
 
-      {/* Sticky Counter Boxes */}
-      <div className="max-w-full mx-auto">
-        <CounterBoxes
-          editedCount={editedCount}
-          reEditedCount={reEditedCount}
-          editedPaidCount={editedPaidCount}
-          capturedCount={capturedCount}
-          reCapturedCount={reCapturedCount}
-          capturedPaidCount={paidCount}
-        />
-      </div>
-
       {/* Tracker Sections */}
-      <div className="max-w-full mx-auto select-none">
+      <div className="max-w-full mx-auto px-2 pb-4 select-none">
         <TrackerSection
           title="ኤዲት የተሰሩ (Edited Videos)"
           type="edited"
@@ -557,10 +498,12 @@ const VideoTracker = () => {
         />
       )}
 
-      {/* History Panel */}
-      {showHistory && (
-        <HistoryPanel history={history} onClose={() => setShowHistory(false)} />
-      )}
+      {/* Reset Password Dialog */}
+      <ResetPasswordDialog
+        open={resetDialogOpen}
+        onOpenChange={setResetDialogOpen}
+        onConfirm={handleResetConfirmed}
+      />
     </div>
   );
 };
