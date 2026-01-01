@@ -5,8 +5,11 @@ interface TrackerCellProps {
   isFilled: boolean;
   isPaid?: boolean;
   type: "edited" | "captured";
-  onToggle: () => void;
-  onTogglePaid?: () => void;
+  isSelecting?: boolean;
+  readOnly?: boolean;
+  onMouseDown?: () => void;
+  onMouseEnter?: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }
 
 const TrackerCell = ({ 
@@ -14,30 +17,30 @@ const TrackerCell = ({
   isFilled, 
   isPaid = false, 
   type, 
-  onToggle,
-  onTogglePaid 
+  isSelecting = false,
+  readOnly = false,
+  onMouseDown,
+  onMouseEnter,
+  onContextMenu
 }: TrackerCellProps) => {
-  const handleClick = () => {
-    onToggle();
-  };
-
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (type === "captured" && onTogglePaid) {
-      onTogglePaid();
-    }
-  };
-
   return (
     <div
       className={cn(
         "tracker-cell",
         isFilled && type === "edited" && "edited-filled",
-        isFilled && type === "captured" && "captured-filled"
+        isFilled && type === "captured" && "captured-filled",
+        readOnly && "cursor-default opacity-90"
       )}
-      onClick={handleClick}
-      onContextMenu={handleContextMenu}
-      title={type === "captured" ? "Left-click to toggle color, Right-click to toggle PAID" : "Click to toggle color"}
+      onMouseDown={!readOnly ? onMouseDown : undefined}
+      onMouseEnter={!readOnly && isSelecting ? onMouseEnter : undefined}
+      onContextMenu={!readOnly ? onContextMenu : undefined}
+      title={
+        readOnly 
+          ? "View only - Admin access required to edit" 
+          : type === "captured" 
+            ? "Click/drag to toggle color, Right-click to toggle PAID" 
+            : "Click/drag to toggle color"
+      }
     >
       <span>{number}</span>
       {isPaid && type === "captured" && (

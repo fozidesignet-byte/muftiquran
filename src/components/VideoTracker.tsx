@@ -1,10 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import TrackerSection from "./TrackerSection";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Save } from "lucide-react";
+import { RotateCcw, Save, Download, LogOut, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-const STORAGE_KEY = "video-tracker-data";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { exportToCSV, exportToExcel } from "@/lib/exportData";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface TrackerData {
   editedCells: boolean[];
@@ -14,120 +21,296 @@ interface TrackerData {
 
 const VideoTracker = () => {
   const { toast } = useToast();
+  const { user, isAdmin, signOut } = useAuth();
   
-  const [editedCells, setEditedCells] = useState<boolean[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const data: TrackerData = JSON.parse(saved);
-      return data.editedCells || Array(180).fill(false);
-    }
-    return Array(180).fill(false);
-  });
+  const [editedCells, setEditedCells] = useState<boolean[]>(Array(180).fill(false));
+  const [capturedCells, setCapturedCells] = useState<boolean[]>(Array(180).fill(false));
+  const [paidCells, setPaidCells] = useState<boolean[]>(Array(180).fill(false));
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  
+  // Drag selection state
+  const [isSelectingEdited, setIsSelectingEdited] = useState(false);
+  const [isSelectingCaptured, setIsSelectingCaptured] = useState(false);
+  const [selectionMode, setSelectionMode] = useState<boolean | null>(null);
 
-  const [capturedCells, setCapturedCells] = useState<boolean[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const data: TrackerData = JSON.parse(saved);
-      return data.capturedCells || Array(180).fill(false);
-    }
-    return Array(180).fill(false);
-  });
-
-  const [paidCells, setPaidCells] = useState<boolean[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const data: TrackerData = JSON.parse(saved);
-      return data.paidCells || Array(180).fill(false);
-    }
-    return Array(180).fill(false);
-  });
-
-  // Auto-save to localStorage whenever data changes
+  // Load data from database
   useEffect(() => {
-    const data: TrackerData = { editedCells, capturedCells, paidCells };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [editedCells, capturedCells, paidCells]);
+    const loadData = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("tracker_data")
+          .select("*")
+          .limit(1)
+          .maybeSingle();
 
-  const toggleEditedCell = (index: number) => {
+        if (error) throw error;
+
+        if (data) {
+          setEditedCells(data.edited_cells || Array(180).fill(false));
+          setCapturedCells(data.captured_cells || Array(180).fill(false));
+          setPaidCells(data.paid_cells || Array(180).fill(false));
+        }
+      } catch (error) {
+        console.error("Error loading data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load tracker data.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [toast]);
+
+  // Handle mouse up to stop selection
+  useEffect(() => {
+    const handleMouseUp = () => {
+      setIsSelectingEdited(false);
+      setIsSelectingCaptured(false);
+      setSelectionMode(null);
+    };
+
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => window.removeEventListener("mouseup", handleMouseUp);
+  }, []);
+
+  const handleEditedMouseDown = useCallback((index: number) => {
+    if (!isAdmin) return;
+    setIsSelectingEdited(true);
+    const newMode = !editedCells[index];
+    setSelectionMode(newMode);
     setEditedCells(prev => {
       const newCells = [...prev];
-      newCells[index] = !newCells[index];
+      newCells[index] = newMode;
       return newCells;
     });
-  };
+  }, [isAdmin, editedCells]);
 
-  const toggleCapturedCell = (index: number) => {
+  const handleEditedMouseEnter = useCallback((index: number) => {
+    if (!isSelectingEdited || selectionMode === null) return;
+    setEditedCells(prev => {
+      const newCells = [...prev];
+      newCells[index] = selectionMode;
+      return newCells;
+    });
+  }, [isSelectingEdited, selectionMode]);
+
+  const handleCapturedMouseDown = useCallback((index: number) => {
+    if (!isAdmin) return;
+    setIsSelectingCaptured(true);
+    const newMode = !capturedCells[index];
+    setSelectionMode(newMode);
     setCapturedCells(prev => {
       const newCells = [...prev];
-      newCells[index] = !newCells[index];
+      newCells[index] = newMode;
       return newCells;
     });
-  };
+  }, [isAdmin, capturedCells]);
 
-  const togglePaidCell = (index: number) => {
+  const handleCapturedMouseEnter = useCallback((index: number) => {
+    if (!isSelectingCaptured || selectionMode === null) return;
+    setCapturedCells(prev => {
+      const newCells = [...prev];
+      newCells[index] = selectionMode;
+      return newCells;
+    });
+  }, [isSelectingCaptured, selectionMode]);
+
+  const togglePaidCell = useCallback((index: number) => {
+    if (!isAdmin) return;
     setPaidCells(prev => {
       const newCells = [...prev];
       newCells[index] = !newCells[index];
       return newCells;
     });
-  };
+  }, [isAdmin]);
 
   const editedCount = editedCells.filter(Boolean).length;
   const capturedCount = capturedCells.filter(Boolean).length;
   const paidCount = paidCells.filter(Boolean).length;
 
-  const handleReset = () => {
-    if (confirm("Are you sure you want to reset all data? This cannot be undone.")) {
+  const handleReset = async () => {
+    if (!isAdmin) return;
+    if (!confirm("Are you sure you want to reset all data? This cannot be undone.")) return;
+    
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from("tracker_data")
+        .update({
+          edited_cells: Array(180).fill(false),
+          captured_cells: Array(180).fill(false),
+          paid_cells: Array(180).fill(false),
+          updated_at: new Date().toISOString(),
+          updated_by: user?.id,
+        })
+        .neq("id", "00000000-0000-0000-0000-000000000000"); // Update all rows
+
+      if (error) throw error;
+
       setEditedCells(Array(180).fill(false));
       setCapturedCells(Array(180).fill(false));
       setPaidCells(Array(180).fill(false));
+      
       toast({
         title: "Data Reset",
         description: "All tracking data has been cleared.",
       });
+    } catch (error) {
+      console.error("Error resetting data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to reset data.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleSave = () => {
-    const data: TrackerData = { editedCells, capturedCells, paidCells };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  const handleSave = async () => {
+    if (!isAdmin) return;
+    setSaving(true);
+    
+    try {
+      const { error } = await supabase
+        .from("tracker_data")
+        .update({
+          edited_cells: editedCells,
+          captured_cells: capturedCells,
+          paid_cells: paidCells,
+          updated_at: new Date().toISOString(),
+          updated_by: user?.id,
+        })
+        .neq("id", "00000000-0000-0000-0000-000000000000"); // Update all rows
+
+      if (error) throw error;
+
+      toast({
+        title: "Saved!",
+        description: "Your progress has been saved to the cloud.",
+      });
+    } catch (error) {
+      console.error("Error saving data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save data.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    exportToCSV({ editedCells, capturedCells, paidCells });
     toast({
-      title: "Saved!",
-      description: "Your progress has been saved.",
+      title: "Exported!",
+      description: "Data exported as CSV file.",
     });
   };
+
+  const handleExportExcel = () => {
+    exportToExcel({ editedCells, capturedCells, paidCells });
+    toast({
+      title: "Exported!",
+      description: "Data exported as Excel file.",
+    });
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    toast({
+      title: "Logged out",
+      description: "You have been logged out.",
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-lg">Loading tracker data...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-4">
       {/* Header */}
       <div className="max-w-[1600px] mx-auto mb-4">
         <div className="flex items-center justify-between flex-wrap gap-4">
-          <h1 className="text-2xl font-bold text-foreground">
-            📹 Video & Cassette Tracker
-          </h1>
-          <div className="flex gap-2">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">
+              📹 Video & Cassette Tracker
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {user?.email} • {isAdmin ? "Admin" : "Viewer"}
+            </p>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Download className="w-4 h-4" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={handleExportCSV}>
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportExcel}>
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Export as Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {isAdmin && (
+              <>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleSave}
+                  className="gap-2"
+                  disabled={saving}
+                >
+                  <Save className="w-4 h-4" />
+                  {saving ? "Saving..." : "Save"}
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={handleReset}
+                  className="gap-2"
+                  disabled={saving}
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  Reset All
+                </Button>
+              </>
+            )}
+            
             <Button 
-              variant="outline" 
+              variant="ghost" 
               size="sm" 
-              onClick={handleSave}
+              onClick={handleLogout}
               className="gap-2"
             >
-              <Save className="w-4 h-4" />
-              Save
-            </Button>
-            <Button 
-              variant="destructive" 
-              size="sm" 
-              onClick={handleReset}
-              className="gap-2"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Reset All
+              <LogOut className="w-4 h-4" />
+              Logout
             </Button>
           </div>
         </div>
         <p className="text-sm text-muted-foreground mt-2">
-          Left-click to fill/unfill • Right-click on Captured section to toggle PAID status
+          {isAdmin 
+            ? "Click and drag to select multiple cells • Right-click on Captured section to toggle PAID status" 
+            : "View only mode - contact admin for edit access"}
         </p>
       </div>
 
@@ -150,13 +333,17 @@ const VideoTracker = () => {
       </div>
 
       {/* Tracker Sections */}
-      <div className="max-w-[1600px] mx-auto">
+      <div className="max-w-[1600px] mx-auto select-none">
         <TrackerSection
           title="ኤዲት የተሰሩ (Edited Videos)"
           type="edited"
           cells={editedCells}
-          onToggleCell={toggleEditedCell}
+          onToggleCell={handleEditedMouseDown}
           count={editedCount}
+          readOnly={!isAdmin}
+          isSelecting={isSelectingEdited}
+          onMouseDown={handleEditedMouseDown}
+          onMouseEnter={handleEditedMouseEnter}
         />
 
         <TrackerSection
@@ -164,10 +351,14 @@ const VideoTracker = () => {
           type="captured"
           cells={capturedCells}
           paidCells={paidCells}
-          onToggleCell={toggleCapturedCell}
+          onToggleCell={handleCapturedMouseDown}
           onTogglePaid={togglePaidCell}
           count={capturedCount}
           paidCount={paidCount}
+          readOnly={!isAdmin}
+          isSelecting={isSelectingCaptured}
+          onMouseDown={handleCapturedMouseDown}
+          onMouseEnter={handleCapturedMouseEnter}
         />
       </div>
     </div>
