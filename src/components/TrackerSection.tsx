@@ -40,8 +40,6 @@ const TrackerSection = ({
   onMouseDown,
   onMouseEnter
 }: TrackerSectionProps) => {
-  // Calculate columns to fit all 180 cells without scrolling
-  // Using CSS grid with auto-fit to maximize cells per row
   const hasComment = (index: number) => {
     return comments.some(c => c.cell_index === index && c.section === type);
   };
@@ -53,7 +51,7 @@ const TrackerSection = ({
         {title}
       </div>
       
-      {/* Grid of cells - auto-scaling */}
+      {/* Grid of cells */}
       <div className="tracker-grid">
         {Array.from({ length: 180 }, (_, i) => i + 1).map((num) => (
           <TrackerCell

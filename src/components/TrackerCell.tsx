@@ -35,9 +35,8 @@ const TrackerCell = ({
   let longPressTimer: NodeJS.Timeout | null = null;
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return; // Only left click
+    if (e.button !== 0) return;
     
-    // Start long press timer for comment
     longPressTimer = setTimeout(() => {
       if (onLongPress) {
         onLongPress();
@@ -64,57 +63,68 @@ const TrackerCell = ({
     }
   };
 
+  const handleReActionClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!readOnly && onReActionClick) {
+      onReActionClick();
+    }
+  };
+
+  const handlePaidClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!readOnly && onPaidClick) {
+      onPaidClick();
+    }
+  };
+
   return (
-    <div className="flex">
-      {/* Main cell */}
-      <div
-        className={cn(
-          "tracker-cell relative",
-          isFilled && type === "edited" && "edited-filled",
-          isFilled && type === "captured" && "captured-filled",
-          readOnly && "cursor-default opacity-90"
-        )}
-        onMouseDown={handleMouseDown}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
-        onMouseEnter={!readOnly && isSelecting ? onMouseEnter : undefined}
-        title={
-          readOnly 
-            ? "View only - Long press to view comment" 
-            : "Click/drag to toggle • Long press for comment"
-        }
-      >
-        <span>{number}</span>
-        {hasComment && (
-          <MessageSquare className="absolute top-0.5 right-0.5 w-2.5 h-2.5 text-blue-500" />
-        )}
-      </div>
+    <div
+      className={cn(
+        "tracker-cell-container",
+        isFilled && type === "edited" && "edited-filled",
+        isFilled && type === "captured" && "captured-filled",
+        readOnly && "cursor-default"
+      )}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseLeave}
+      onMouseEnter={!readOnly && isSelecting ? onMouseEnter : undefined}
+      title={
+        readOnly 
+          ? "View only - Long press to view comment" 
+          : "Click/drag to toggle • Long press for comment"
+      }
+    >
+      {/* Cell number */}
+      <span className="cell-number">{number}</span>
       
-      {/* Re-action mini cell */}
-      <div
-        className={cn(
-          "mini-cell",
-          isReActionFilled && type === "edited" && "edited-filled",
-          isReActionFilled && type === "captured" && "captured-filled",
-          readOnly && "cursor-default opacity-90"
-        )}
-        onClick={!readOnly ? onReActionClick : undefined}
-        title={type === "edited" ? "Re-Edit" : "Re-Capture"}
-      >
-        <span className="text-[8px]">R</span>
-      </div>
+      {/* Comment indicator */}
+      {hasComment && (
+        <MessageSquare className="comment-indicator" />
+      )}
       
-      {/* Paid mini cell */}
-      <div
-        className={cn(
-          "mini-cell paid-mini-cell",
-          isPaid && "paid-filled",
-          readOnly && "cursor-default opacity-90"
-        )}
-        onClick={!readOnly ? onPaidClick : undefined}
-        title="Paid"
-      >
-        <span className="text-[8px]">P</span>
+      {/* R and P indicators inside the cell */}
+      <div className="cell-indicators">
+        <div
+          className={cn(
+            "indicator-r",
+            isReActionFilled && "active"
+          )}
+          onClick={handleReActionClick}
+          title={type === "edited" ? "Re-Edit" : "Re-Capture"}
+        >
+          R
+        </div>
+        <div
+          className={cn(
+            "indicator-p",
+            isPaid && "active"
+          )}
+          onClick={handlePaidClick}
+          title="Paid"
+        >
+          P
+        </div>
       </div>
     </div>
   );
