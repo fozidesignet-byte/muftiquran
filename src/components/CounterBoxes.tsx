@@ -20,7 +20,7 @@ const CounterBoxes = ({
         <div className="text-xl md:text-2xl font-bold text-white">{editedCount}</div>
         <div className="text-[10px] md:text-xs font-medium text-white/90">Edited</div>
       </div>
-      <div className="p-2 md:p-3 rounded-md text-center shadow-sm bg-box-green border-destructive">
+      <div className="p-2 md:p-3 rounded-md text-center shadow-sm bg-box-reedit">
         <div className="text-xl md:text-2xl font-bold text-white">{reEditedCount}</div>
         <div className="text-[10px] md:text-xs font-medium text-white/90">Re-Edit</div>
       </div>
