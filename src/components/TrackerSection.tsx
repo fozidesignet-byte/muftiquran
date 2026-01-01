@@ -9,6 +9,10 @@ interface TrackerSectionProps {
   onTogglePaid?: (index: number) => void;
   count: number;
   paidCount?: number;
+  readOnly?: boolean;
+  isSelecting?: boolean;
+  onMouseDown?: (index: number) => void;
+  onMouseEnter?: (index: number) => void;
 }
 
 const TrackerSection = ({ 
@@ -19,7 +23,11 @@ const TrackerSection = ({
   onToggleCell,
   onTogglePaid,
   count,
-  paidCount = 0
+  paidCount = 0,
+  readOnly = false,
+  isSelecting = false,
+  onMouseDown,
+  onMouseEnter
 }: TrackerSectionProps) => {
   // Create rows of 33 cells each (like in the reference image)
   const cellsPerRow = 33;
@@ -32,6 +40,13 @@ const TrackerSection = ({
     }
     rows.push(row);
   }
+
+  const handleContextMenu = (e: React.MouseEvent, index: number) => {
+    e.preventDefault();
+    if (type === "captured" && onTogglePaid && !readOnly) {
+      onTogglePaid(index);
+    }
+  };
 
   return (
     <div className="mb-6">
@@ -52,8 +67,11 @@ const TrackerSection = ({
                   isFilled={cells[num - 1]}
                   isPaid={paidCells[num - 1]}
                   type={type}
-                  onToggle={() => onToggleCell(num - 1)}
-                  onTogglePaid={onTogglePaid ? () => onTogglePaid(num - 1) : undefined}
+                  readOnly={readOnly}
+                  isSelecting={isSelecting}
+                  onMouseDown={() => onMouseDown?.(num - 1)}
+                  onMouseEnter={() => onMouseEnter?.(num - 1)}
+                  onContextMenu={(e) => handleContextMenu(e, num - 1)}
                 />
               ))}
             </div>
