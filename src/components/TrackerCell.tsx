@@ -186,7 +186,7 @@ const TrackerCell = ({
         onTouchMove={handleMainTouchMove}
         onTouchEnd={handleMainTouchEnd}
       >
-        <span className={cn("cell-number", isFilled && type === "captured" && "text-white")}>
+        <span className={cn("cell-number", isFilled && "text-white")}>
           {number}
         </span>
       </div>
