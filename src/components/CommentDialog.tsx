@@ -87,7 +87,7 @@ const CommentDialog = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            Comment for Cell #{cellIndex + 1} ({section === "edited" ? "Edited" : "Captured"})
+            Comment for Cassette {cellIndex + 1}
           </DialogTitle>
         </DialogHeader>
 
@@ -95,10 +95,6 @@ const CommentDialog = ({
           <div className="space-y-4">
             <div className="bg-muted p-4 rounded-md">
               <p className="whitespace-pre-wrap">{existingComment.comment}</p>
-              <p className="text-xs text-muted-foreground mt-2">
-                By {existingComment.created_by_email} on{" "}
-                {new Date(existingComment.created_at).toLocaleString()}
-              </p>
             </div>
             {!readOnly && (
               <DialogFooter className="gap-2">
