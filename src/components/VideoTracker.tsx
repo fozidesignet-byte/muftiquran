@@ -5,7 +5,7 @@ import CounterBoxes from "./CounterBoxes";
 import CommentDialog from "./CommentDialog";
 import ResetPasswordDialog from "./ResetPasswordDialog";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Save, Download, LogOut, FileSpreadsheet, Settings } from "lucide-react";
+import { RotateCcw, Save, Download, LogOut, FileSpreadsheet, Settings, Moon, Sun } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +53,12 @@ const VideoTracker = () => {
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return document.documentElement.classList.contains('dark');
+    }
+    return false;
+  });
   
   // Drag selection state - separate for main, R, P per section
   const [isSelectingEditedMain, setIsSelectingEditedMain] = useState(false);
@@ -487,6 +493,18 @@ const VideoTracker = () => {
     toast({ title: "Exported!", description: "Data exported as Excel file." });
   };
 
+  const toggleDarkMode = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
+
   const handleLogout = async () => {
     await signOut();
     toast({ title: "Logged out", description: "You have been logged out." });
@@ -515,6 +533,9 @@ const VideoTracker = () => {
               <p className="islamic-subtitle">
                 Video Editing & Cassette Tracker
               </p>
+              <p className="islamic-subtitle mt-1" style={{ fontFamily: "'Noto Serif Ethiopic', Georgia, serif" }}>
+                የቁርአን ተፍሲር ቪዲዮ ኤዲቲንግ እና ካሴት ትራከር
+              </p>
             </div>
             <div className="islamic-pattern-right">☪</div>
           </div>
@@ -525,6 +546,9 @@ const VideoTracker = () => {
               {user?.user_metadata?.display_name || user?.email} • {isAdmin ? "Admin" : "Viewer"}
             </p>
             <div className="flex gap-1 flex-wrap">
+              <Button variant="outline" size="sm" onClick={toggleDarkMode} className="gap-1">
+                {isDarkMode ? <Sun className="w-3 h-3" /> : <Moon className="w-3 h-3" />}
+              </Button>
               <Button variant="outline" size="sm" onClick={() => navigate("/profile")} className="gap-1">
                 <Settings className="w-3 h-3" />
               </Button>
@@ -621,6 +645,11 @@ const VideoTracker = () => {
           onPMouseEnter={handleCapturedPMouseEnter}
           onOpenComment={(index) => openCommentDialog(index, "captured")}
         />
+      </div>
+
+      {/* Footer */}
+      <div className="powered-by-footer">
+        Powered By - <span>AnwarulHadi</span>
       </div>
 
       {/* Comment Dialog */}
