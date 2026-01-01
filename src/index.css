@@ -35,21 +35,21 @@
     --radius: 0.25rem;
 
     /* Custom colors for the tracker */
-    --edited-fill: 48 100% 50%;
-    --edited-header: 48 100% 60%;
-    --captured-fill: 142 70% 45%;
-    --captured-header: 142 70% 55%;
-    --re-action-color: 0 80% 55%;
-    --paid-color: 220 90% 55%;
-    --counter-bg: 142 70% 45%;
+    --edited-fill: 43 67% 60%;
+    --edited-header: 43 67% 60%;
+    --captured-fill: 181 95% 27%;
+    --captured-header: 181 95% 27%;
+    --re-action-color: 0 40% 46%;
+    --paid-color: 149 42% 53%;
+    --counter-bg: 149 42% 53%;
     --counter-text: 0 0% 100%;
     --cell-border: 220 13% 75%;
     
-    /* Counter box colors from design */
-    --box-edited: 45 80% 65%;
-    --box-green: 142 60% 40%;
-    --box-captured: 174 50% 35%;
-    --box-maroon: 0 45% 45%;
+    /* Counter box colors from design - exact hex values */
+    --box-edited: 43 67% 60%;
+    --box-green: 149 42% 53%;
+    --box-captured: 181 95% 27%;
+    --box-maroon: 0 40% 46%;
     --cell-hover: 220 10% 88%;
   }
 
@@ -82,22 +82,22 @@
     --input: 220 15% 25%;
     --ring: 220 10% 70%;
 
-    --edited-fill: 48 100% 45%;
-    --edited-header: 48 100% 35%;
-    --captured-fill: 142 70% 35%;
-    --captured-header: 142 70% 30%;
-    --re-action-color: 0 80% 50%;
-    --paid-color: 220 80% 50%;
-    --counter-bg: 142 70% 35%;
+    --edited-fill: 43 60% 55%;
+    --edited-header: 43 60% 50%;
+    --captured-fill: 181 85% 24%;
+    --captured-header: 181 85% 22%;
+    --re-action-color: 0 40% 42%;
+    --paid-color: 149 38% 48%;
+    --counter-bg: 149 38% 48%;
     --counter-text: 0 0% 100%;
     --cell-border: 220 15% 30%;
     --cell-hover: 220 15% 25%;
     
     /* Counter box colors from design - dark mode */
-    --box-edited: 45 70% 55%;
-    --box-green: 142 50% 35%;
-    --box-captured: 174 45% 30%;
-    --box-maroon: 0 40% 40%;
+    --box-edited: 43 60% 55%;
+    --box-green: 149 38% 48%;
+    --box-captured: 181 85% 24%;
+    --box-maroon: 0 40% 42%;
   }
 }
 
