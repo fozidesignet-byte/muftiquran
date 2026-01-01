@@ -350,12 +350,12 @@ const VideoTracker = () => {
   }, [isSelectingCapturedP, selectionMode, capturedCells]);
 
   const openCommentDialog = useCallback((index: number, section: string) => {
-    // Only open if there's a comment for this cell
+    // Admin can add new comments, non-admin can only view existing ones
     const hasComment = comments.some(c => c.cell_index === index && c.section === section);
-    if (!hasComment) return;
+    if (!isAdmin && !hasComment) return;
     setSelectedCellForComment({ index, section });
     setCommentDialogOpen(true);
-  }, [comments]);
+  }, [comments, isAdmin]);
 
   const getExistingComment = useCallback(() => {
     if (!selectedCellForComment) return null;
