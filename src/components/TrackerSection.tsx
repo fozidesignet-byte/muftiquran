@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import TrackerCell from "./TrackerCell";
 
 interface Comment {
@@ -32,7 +33,7 @@ interface TrackerSectionProps {
   onOpenComment: (index: number) => void;
 }
 
-const TrackerSection = ({ 
+const TrackerSection = forwardRef<HTMLDivElement, TrackerSectionProps>(({ 
   title, 
   type, 
   cells, 
@@ -50,13 +51,13 @@ const TrackerSection = ({
   onPMouseDown,
   onPMouseEnter,
   onOpenComment
-}: TrackerSectionProps) => {
+}, ref) => {
   const hasComment = (index: number) => {
     return comments.some(c => c.cell_index === index && c.section === type);
   };
 
   return (
-    <div className="mb-4">
+    <div className="mb-4" ref={ref}>
       {/* Section Header */}
       <div className={`section-header ${type}`}>
         {title}
@@ -89,6 +90,8 @@ const TrackerSection = ({
       </div>
     </div>
   );
-};
+});
+
+TrackerSection.displayName = "TrackerSection";
 
 export default TrackerSection;

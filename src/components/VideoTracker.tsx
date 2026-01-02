@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import TrackerSection from "./TrackerSection";
 import CounterBoxes from "./CounterBoxes";
 import CommentDialog from "./CommentDialog";
 import ResetPasswordDialog from "./ResetPasswordDialog";
+import StickyScrollHeader from "./StickyScrollHeader";
+import SummaryPage from "./SummaryPage";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Save, Download, LogOut, FileSpreadsheet, Settings, Moon, Sun } from "lucide-react";
+import { RotateCcw, Save, Download, LogOut, FileSpreadsheet, Settings, Moon, Sun, BarChart3, Grid3X3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +34,15 @@ const VideoTracker = () => {
   const { toast } = useToast();
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
+  
+  // Refs for sections
+  const editedSectionRef = useRef<HTMLDivElement>(null);
+  const capturedSectionRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  
+  // Navigation state
+  const [activeTab, setActiveTab] = useState<"progress" | "summary">("progress");
   
   // Main cells
   const [editedCells, setEditedCells] = useState<boolean[]>(Array(180).fill(false));
@@ -68,6 +79,19 @@ const VideoTracker = () => {
   const [isSelectingCapturedR, setIsSelectingCapturedR] = useState(false);
   const [isSelectingCapturedP, setIsSelectingCapturedP] = useState(false);
   const [selectionMode, setSelectionMode] = useState<boolean | null>(null);
+
+  // Measure header height for sticky scroll header positioning
+  useEffect(() => {
+    const updateHeaderHeight = () => {
+      if (headerRef.current) {
+        setHeaderHeight(headerRef.current.offsetHeight);
+      }
+    };
+    
+    updateHeaderHeight();
+    window.addEventListener("resize", updateHeaderHeight);
+    return () => window.removeEventListener("resize", updateHeaderHeight);
+  }, []);
 
   // Load data from database
   useEffect(() => {
@@ -521,7 +545,7 @@ const VideoTracker = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Sticky Header with Counter Boxes */}
-      <div className="sticky-header">
+      <div className="sticky-header" ref={headerRef}>
         <div className="max-w-full mx-auto px-2 pt-2">
           {/* Islamic Header Title */}
           <div className="islamic-header">
@@ -601,51 +625,98 @@ const VideoTracker = () => {
             reCapturedCount={reCapturedCount}
             capturedPaidCount={paidCount}
           />
+
+          {/* Navigation Tabs */}
+          <div className="flex gap-1 mt-2 pb-2">
+            <Button 
+              variant={activeTab === "progress" ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => setActiveTab("progress")}
+              className="flex-1 gap-1"
+            >
+              <Grid3X3 className="w-3 h-3" />
+              Progress
+            </Button>
+            <Button 
+              variant={activeTab === "summary" ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => setActiveTab("summary")}
+              className="flex-1 gap-1"
+            >
+              <BarChart3 className="w-3 h-3" />
+              Summary
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Tracker Sections */}
-      <div className="max-w-full mx-auto px-2 pb-4 select-none">
-        <TrackerSection
-          title="ኤዲት የተሰሩ (Edited Videos)"
-          type="edited"
-          cells={editedCells}
-          reActionCells={reEditedCells}
-          paidCells={editedPaidCells}
-          comments={comments}
-          readOnly={!isAdmin}
-          isSelectingMain={isSelectingEditedMain}
-          isSelectingR={isSelectingEditedR}
-          isSelectingP={isSelectingEditedP}
-          onMainMouseDown={handleEditedMainMouseDown}
-          onMainMouseEnter={handleEditedMainMouseEnter}
-          onRMouseDown={handleEditedRMouseDown}
-          onRMouseEnter={handleEditedRMouseEnter}
-          onPMouseDown={handleEditedPMouseDown}
-          onPMouseEnter={handleEditedPMouseEnter}
-          onOpenComment={(index) => openCommentDialog(index, "edited")}
+      {/* Sticky Scroll Header for Progress tab */}
+      {activeTab === "progress" && (
+        <StickyScrollHeader
+          editedSectionRef={editedSectionRef}
+          capturedSectionRef={capturedSectionRef}
+          headerOffset={headerHeight}
         />
+      )}
 
-        <TrackerSection
-          title="ካፕቸር የተደረጉ (Captured Cassettes)"
-          type="captured"
-          cells={capturedCells}
-          reActionCells={reCapturedCells}
+      {/* Content based on active tab */}
+      {activeTab === "progress" ? (
+        <>
+          {/* Tracker Sections */}
+          <div className="max-w-full mx-auto px-2 pb-4 select-none">
+            <TrackerSection
+              ref={editedSectionRef}
+              title="ኤዲት የተሰሩ (Edited Videos)"
+              type="edited"
+              cells={editedCells}
+              reActionCells={reEditedCells}
+              paidCells={editedPaidCells}
+              comments={comments}
+              readOnly={!isAdmin}
+              isSelectingMain={isSelectingEditedMain}
+              isSelectingR={isSelectingEditedR}
+              isSelectingP={isSelectingEditedP}
+              onMainMouseDown={handleEditedMainMouseDown}
+              onMainMouseEnter={handleEditedMainMouseEnter}
+              onRMouseDown={handleEditedRMouseDown}
+              onRMouseEnter={handleEditedRMouseEnter}
+              onPMouseDown={handleEditedPMouseDown}
+              onPMouseEnter={handleEditedPMouseEnter}
+              onOpenComment={(index) => openCommentDialog(index, "edited")}
+            />
+
+            <TrackerSection
+              ref={capturedSectionRef}
+              title="ካፕቸር የተደረጉ (Captured Cassettes)"
+              type="captured"
+              cells={capturedCells}
+              reActionCells={reCapturedCells}
+              paidCells={paidCells}
+              comments={comments}
+              readOnly={!isAdmin}
+              isSelectingMain={isSelectingCapturedMain}
+              isSelectingR={isSelectingCapturedR}
+              isSelectingP={isSelectingCapturedP}
+              onMainMouseDown={handleCapturedMainMouseDown}
+              onMainMouseEnter={handleCapturedMainMouseEnter}
+              onRMouseDown={handleCapturedRMouseDown}
+              onRMouseEnter={handleCapturedRMouseEnter}
+              onPMouseDown={handleCapturedPMouseDown}
+              onPMouseEnter={handleCapturedPMouseEnter}
+              onOpenComment={(index) => openCommentDialog(index, "captured")}
+            />
+          </div>
+        </>
+      ) : (
+        <SummaryPage
+          editedCells={editedCells}
+          reEditedCells={reEditedCells}
+          editedPaidCells={editedPaidCells}
+          capturedCells={capturedCells}
+          reCapturedCells={reCapturedCells}
           paidCells={paidCells}
-          comments={comments}
-          readOnly={!isAdmin}
-          isSelectingMain={isSelectingCapturedMain}
-          isSelectingR={isSelectingCapturedR}
-          isSelectingP={isSelectingCapturedP}
-          onMainMouseDown={handleCapturedMainMouseDown}
-          onMainMouseEnter={handleCapturedMainMouseEnter}
-          onRMouseDown={handleCapturedRMouseDown}
-          onRMouseEnter={handleCapturedRMouseEnter}
-          onPMouseDown={handleCapturedPMouseDown}
-          onPMouseEnter={handleCapturedPMouseEnter}
-          onOpenComment={(index) => openCommentDialog(index, "captured")}
         />
-      </div>
+      )}
 
       {/* Footer */}
       <div className="powered-by-footer">
