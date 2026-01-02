@@ -108,10 +108,6 @@ const CommentDialog = ({
               {/* Comment Display Card */}
               <div className="bg-muted/50 rounded-xl p-4 border border-border">
                 <p className="whitespace-pre-wrap text-foreground leading-relaxed">{existingComment.comment}</p>
-                <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>By {existingComment.created_by_email?.split('@')[0] || 'Admin'}</span>
-                  <span>{new Date(existingComment.updated_at).toLocaleDateString()}</span>
-                </div>
               </div>
               
               {!readOnly && (
