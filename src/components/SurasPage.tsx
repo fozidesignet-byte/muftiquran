@@ -222,12 +222,20 @@ const SurasPage = ({ isAdmin, onExportedSurasChange }: SurasPageProps) => {
       {/* Header with Total Suras and Cassettes Counter - Side by Side */}
       <div className="text-center py-3 space-y-2">
         <h2 className="text-xl font-bold text-foreground mb-2">ሱራዎች (Suras)</h2>
-        <div className="flex justify-center items-center gap-2">
+        <div className="flex justify-center items-center gap-2 flex-wrap">
+          {/* Exported Counter - Left */}
+          <div className="inline-flex items-center gap-2 bg-box-green text-white px-3 py-2 rounded-full">
+            <Check className="w-4 h-4" />
+            <span className="font-bold text-sm">{exportedSurasCount}</span>
+            <span className="text-xs opacity-90">Exported</span>
+          </div>
+          {/* Suras Counter */}
           <div className="inline-flex items-center gap-2 bg-emerald-500 text-white px-3 py-2 rounded-full">
             <BookOpen className="w-4 h-4" />
             <span className="font-bold text-sm">{totalFilledSuras}/114</span>
             <span className="text-xs opacity-90">Suras</span>
           </div>
+          {/* Cassettes Counter */}
           <div className="inline-flex items-center gap-2 bg-sky-500 text-white px-3 py-2 rounded-full">
             <span className="font-bold text-sm">{totalCassettes}</span>
             <span className="text-xs opacity-90">Cassettes</span>

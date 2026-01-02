@@ -9,10 +9,12 @@ import SummaryPage from "./SummaryPage";
 import SurasPage from "./SurasPage";
 import HamburgerMenu from "./HamburgerMenu";
 import NotificationBell from "./NotificationBell";
+import OfflineScreen from "./OfflineScreen";
 import { Button } from "@/components/ui/button";
 import { BarChart3, Grid3X3, BookOpen, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { exportToCSV, exportToExcel } from "@/lib/exportData";
 
@@ -31,6 +33,7 @@ const VideoTracker = () => {
   const { toast } = useToast();
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
+  const isOnline = useOnlineStatus();
   
   // Refs for sections
   const editedSectionRef = useRef<HTMLDivElement>(null);
@@ -209,6 +212,19 @@ const VideoTracker = () => {
             .select("*")
             .order("created_at", { ascending: false });
           if (data) setComments(data);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'suras_cassette_data' },
+        async () => {
+          const { data } = await supabase
+            .from("suras_cassette_data")
+            .select("is_exported");
+          if (data) {
+            const exportedCount = data.filter(s => s.is_exported).length;
+            setSurasExportCount(exportedCount);
+          }
         }
       )
       .subscribe();
@@ -655,22 +671,26 @@ const VideoTracker = () => {
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
+      {/* Offline Screen */}
+      {!isOnline && <OfflineScreen onRetry={() => window.location.reload()} />}
+
       {/* Pull to refresh indicator */}
       {(pullDistance > 0 || refreshing) && (
         <div 
-          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm transition-all"
-          style={{ height: refreshing ? 50 : pullDistance }}
+          className="fixed top-0 left-0 right-0 z-50 flex flex-col items-center justify-center bg-background/90 backdrop-blur-md transition-all rounded-b-2xl shadow-lg"
+          style={{ height: refreshing ? 60 : pullDistance }}
         >
-          <RefreshCw 
-            className={`w-6 h-6 text-primary transition-transform ${refreshing ? 'animate-spin' : ''}`}
-            style={{ 
-              transform: refreshing ? undefined : `rotate(${pullDistance * 2}deg)`,
-              opacity: Math.min(pullDistance / pullThreshold, 1)
-            }}
-          />
-          {pullDistance >= pullThreshold && !refreshing && (
-            <span className="ml-2 text-sm text-muted-foreground">Release to refresh</span>
-          )}
+          <div className={`w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ${refreshing ? 'animate-pulse' : ''}`}>
+            <RefreshCw 
+              className={`w-5 h-5 text-primary transition-transform ${refreshing ? 'animate-spin' : ''}`}
+              style={{ 
+                transform: refreshing ? undefined : `rotate(${pullDistance * 3}deg)`,
+              }}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground mt-1">
+            {refreshing ? 'Refreshing...' : pullDistance >= pullThreshold ? 'Release to refresh' : 'Pull to refresh'}
+          </span>
         </div>
       )}
       {/* Sticky Header */}

@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Edit2, X } from "lucide-react";
+import { Trash2, Edit2, X, MessageSquare } from "lucide-react";
 
 interface Comment {
   id: string;
@@ -84,77 +84,99 @@ const CommentDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>
-            Comment for Cassette {cellIndex + 1}
-          </DialogTitle>
-        </DialogHeader>
-
-        {existingComment && !isEditing ? (
-          <div className="space-y-4">
-            <div className="bg-muted p-4 rounded-md">
-              <p className="whitespace-pre-wrap">{existingComment.comment}</p>
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden rounded-2xl border-0 shadow-2xl">
+        {/* Modern Header */}
+        <div className="bg-gradient-to-r from-primary to-primary/80 p-4 text-primary-foreground">
+          <DialogHeader className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                <MessageSquare className="w-5 h-5" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-bold text-primary-foreground">
+                  Cassette {cellIndex + 1}
+                </DialogTitle>
+                <p className="text-sm text-primary-foreground/80 capitalize">{section} Section</p>
+              </div>
             </div>
-            {!readOnly && (
-              <DialogFooter className="gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                  className="gap-2"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Edit
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleDelete}
-                  disabled={saving}
-                  className="gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </Button>
-              </DialogFooter>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <Textarea
-              placeholder="Enter your comment..."
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              rows={4}
-              disabled={readOnly}
-            />
-            {!readOnly && (
-              <DialogFooter className="gap-2">
-                {existingComment && (
+          </DialogHeader>
+        </div>
+
+        <div className="p-5">
+          {existingComment && !isEditing ? (
+            <div className="space-y-4">
+              {/* Comment Display Card */}
+              <div className="bg-muted/50 rounded-xl p-4 border border-border">
+                <p className="whitespace-pre-wrap text-foreground leading-relaxed">{existingComment.comment}</p>
+                <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
+                  <span>By {existingComment.created_by_email?.split('@')[0] || 'Admin'}</span>
+                  <span>{new Date(existingComment.updated_at).toLocaleDateString()}</span>
+                </div>
+              </div>
+              
+              {!readOnly && (
+                <DialogFooter className="gap-2 pt-2">
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    onClick={() => {
-                      setComment(existingComment.comment);
-                      setIsEditing(false);
-                    }}
+                    onClick={() => setIsEditing(true)}
+                    className="gap-2 rounded-xl flex-1"
                   >
-                    <X className="w-4 h-4 mr-2" />
-                    Cancel
+                    <Edit2 className="w-4 h-4" />
+                    Edit
                   </Button>
-                )}
-                <Button
-                  onClick={handleSave}
-                  disabled={saving || !comment.trim()}
-                  size="sm"
-                >
-                  {saving ? "Saving..." : existingComment ? "Update" : "Save"}
-                </Button>
-              </DialogFooter>
-            )}
-          </div>
-        )}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDelete}
+                    disabled={saving}
+                    className="gap-2 rounded-xl flex-1"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete
+                  </Button>
+                </DialogFooter>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Textarea
+                placeholder="Write your comment here..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                rows={4}
+                disabled={readOnly}
+                className="rounded-xl resize-none border-border/50 focus:border-primary bg-muted/30"
+              />
+              {!readOnly && (
+                <DialogFooter className="gap-2 pt-2">
+                  {existingComment && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setComment(existingComment.comment);
+                        setIsEditing(false);
+                      }}
+                      className="gap-2 rounded-xl"
+                    >
+                      <X className="w-4 h-4" />
+                      Cancel
+                    </Button>
+                  )}
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving || !comment.trim()}
+                    size="sm"
+                    className="gap-2 rounded-xl flex-1"
+                  >
+                    {saving ? "Saving..." : existingComment ? "Update Comment" : "Save Comment"}
+                  </Button>
+                </DialogFooter>
+              )}
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
