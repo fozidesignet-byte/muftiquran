@@ -576,9 +576,10 @@ const VideoTracker = () => {
     <div className="min-h-screen bg-background">
       {/* Sticky Header */}
       <div className="sticky-header" ref={headerRef}>
-        <div className="max-w-full mx-auto px-2 pt-2">
-          {/* Top bar with hamburger, title, and notifications */}
-          <div className="flex items-center gap-2 mb-2">
+        <div className="w-full px-2 pt-2">
+          {/* Full-width header bar */}
+          <div className="flex items-center w-full gap-2 mb-2 bg-card/80 backdrop-blur-sm rounded-lg p-2 border border-border/50">
+            {/* Hamburger Menu */}
             <HamburgerMenu
               userName={user?.user_metadata?.display_name || user?.email || "User"}
               isAdmin={isAdmin}
@@ -592,18 +593,18 @@ const VideoTracker = () => {
               onLogout={handleLogout}
             />
             
-            {/* Islamic Header Title */}
-            <div className="islamic-header flex-1">
-              <div className="islamic-pattern-left">☪</div>
-              <div className="text-center flex-1">
-                <h1 className="islamic-title text-sm md:text-lg">
+            {/* Islamic Header Title - takes remaining space */}
+            <div className="islamic-header flex-1 min-w-0">
+              <div className="islamic-pattern-left hidden sm:block">☪</div>
+              <div className="text-center flex-1 min-w-0">
+                <h1 className="islamic-title text-xs sm:text-sm md:text-lg truncate">
                   Mufi Hajj Umer Idris Quran Tefseer
                 </h1>
-                <p className="islamic-subtitle text-[10px] md:text-xs">
+                <p className="islamic-subtitle text-[9px] sm:text-[10px] md:text-xs truncate">
                   Video Editing & Cassette Tracker
                 </p>
               </div>
-              <div className="islamic-pattern-right">☪</div>
+              <div className="islamic-pattern-right hidden sm:block">☪</div>
             </div>
 
             {/* Notification Bell */}
