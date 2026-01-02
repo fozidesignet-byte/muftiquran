@@ -6,18 +6,13 @@ import CommentDialog from "./CommentDialog";
 import ResetPasswordDialog from "./ResetPasswordDialog";
 import StickyScrollHeader from "./StickyScrollHeader";
 import SummaryPage from "./SummaryPage";
+import HamburgerMenu from "./HamburgerMenu";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Save, Download, LogOut, FileSpreadsheet, Settings, Moon, Sun, BarChart3, Grid3X3 } from "lucide-react";
+import { BarChart3, Grid3X3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { exportToCSV, exportToExcel } from "@/lib/exportData";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface Comment {
   id: string;
@@ -53,6 +48,9 @@ const VideoTracker = () => {
   const [reEditedCells, setReEditedCells] = useState<boolean[]>(Array(180).fill(false));
   const [editedPaidCells, setEditedPaidCells] = useState<boolean[]>(Array(180).fill(false));
   const [reCapturedCells, setReCapturedCells] = useState<boolean[]>(Array(180).fill(false));
+  
+  // Export counter (admin editable)
+  const [exportCount, setExportCount] = useState(0);
   
   // Comments
   const [comments, setComments] = useState<Comment[]>([]);
@@ -112,6 +110,12 @@ const VideoTracker = () => {
           setReEditedCells(trackerResult.data.re_edited_cells || Array(180).fill(false));
           setEditedPaidCells(trackerResult.data.edited_paid_cells || Array(180).fill(false));
           setReCapturedCells(trackerResult.data.re_captured_cells || Array(180).fill(false));
+        }
+        
+        // Load export count from localStorage
+        const savedExportCount = localStorage.getItem('exportCount');
+        if (savedExportCount) {
+          setExportCount(parseInt(savedExportCount, 10));
         }
         
         setComments(commentsResult.data || []);
@@ -189,6 +193,12 @@ const VideoTracker = () => {
     };
   }, []);
 
+  // Handle export count change
+  const handleExportCountChange = (value: number) => {
+    setExportCount(value);
+    localStorage.setItem('exportCount', value.toString());
+  };
+
   // EDITED SECTION - Main cell handlers
   const handleEditedMainMouseDown = useCallback((index: number) => {
     if (!isAdmin) return;
@@ -198,7 +208,6 @@ const VideoTracker = () => {
     setEditedCells(prev => {
       const newCells = [...prev];
       newCells[index] = newMode;
-      // If deselecting main, also deselect R and P
       if (!newMode) {
         setReEditedCells(prevR => {
           const newR = [...prevR];
@@ -220,7 +229,6 @@ const VideoTracker = () => {
     setEditedCells(prev => {
       const newCells = [...prev];
       newCells[index] = selectionMode;
-      // If deselecting, also deselect R and P
       if (!selectionMode) {
         setReEditedCells(prevR => {
           const newR = [...prevR];
@@ -290,7 +298,6 @@ const VideoTracker = () => {
     setCapturedCells(prev => {
       const newCells = [...prev];
       newCells[index] = newMode;
-      // If deselecting main, also deselect R and P
       if (!newMode) {
         setReCapturedCells(prevR => {
           const newR = [...prevR];
@@ -312,7 +319,6 @@ const VideoTracker = () => {
     setCapturedCells(prev => {
       const newCells = [...prev];
       newCells[index] = selectionMode;
-      // If deselecting, also deselect R and P
       if (!selectionMode) {
         setReCapturedCells(prevR => {
           const newR = [...prevR];
@@ -374,7 +380,6 @@ const VideoTracker = () => {
   }, [isSelectingCapturedP, selectionMode, capturedCells]);
 
   const openCommentDialog = useCallback((index: number, section: string) => {
-    // Admin can add new comments, non-admin can only view existing ones
     const hasComment = comments.some(c => c.cell_index === index && c.section === section);
     if (!isAdmin && !hasComment) return;
     setSelectedCellForComment({ index, section });
@@ -459,6 +464,8 @@ const VideoTracker = () => {
       setReEditedCells(Array(180).fill(false));
       setEditedPaidCells(Array(180).fill(false));
       setReCapturedCells(Array(180).fill(false));
+      setExportCount(0);
+      localStorage.setItem('exportCount', '0');
       
       toast({ title: "Data Reset", description: "All tracking data has been cleared." });
     } catch (error) {
@@ -544,87 +551,53 @@ const VideoTracker = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Sticky Header with Counter Boxes */}
+      {/* Sticky Header */}
       <div className="sticky-header" ref={headerRef}>
         <div className="max-w-full mx-auto px-2 pt-2">
-          {/* Islamic Header Title */}
-          <div className="islamic-header">
-            <div className="islamic-pattern-left">☪</div>
-            <div className="text-center">
-              <h1 className="islamic-title">
-                Mufi Hajj Umer Idris Quran Tefseer
-              </h1>
-              <p className="islamic-subtitle">
-                Video Editing & Cassette Tracker
-              </p>
-              <p className="islamic-subtitle mt-1" style={{ fontFamily: "'Noto Serif Ethiopic', Georgia, serif" }}>
-                የቁርአን ተፍሲር ቪዲዮ ኤዲቲንግ እና ካሴት ትራከር
-              </p>
-            </div>
-            <div className="islamic-pattern-right">☪</div>
-          </div>
-
-          {/* User info and actions */}
-          <div className="flex items-center justify-between flex-wrap gap-2 mb-2 mt-2">
-            <p className="text-xs text-muted-foreground">
-              {user?.user_metadata?.display_name || user?.email} • {isAdmin ? "Admin" : "Viewer"}
-            </p>
-            <div className="flex gap-1 flex-wrap">
-              <Button variant="outline" size="sm" onClick={toggleDarkMode} className="gap-1">
-                {isDarkMode ? <Sun className="w-3 h-3" /> : <Moon className="w-3 h-3" />}
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate("/profile")} className="gap-1">
-                <Settings className="w-3 h-3" />
-              </Button>
-              {isAdmin && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-1">
-                      <Download className="w-3 h-3" />
-                      Export
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={handleExportCSV}>
-                      <FileSpreadsheet className="w-4 h-4 mr-2" />
-                      Export as CSV
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleExportExcel}>
-                      <FileSpreadsheet className="w-4 h-4 mr-2" />
-                      Export as Excel
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-              
-              {isAdmin && (
-                <>
-                  <Button variant="outline" size="sm" onClick={handleSave} className="gap-1" disabled={saving}>
-                    <Save className="w-3 h-3" />
-                    {saving ? "..." : "Save"}
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => setResetDialogOpen(true)} className="gap-1" disabled={saving}>
-                    <RotateCcw className="w-3 h-3" />
-                    Reset
-                  </Button>
-                </>
-              )}
-              
-              <Button variant="ghost" size="sm" onClick={handleLogout} className="gap-1">
-                <LogOut className="w-3 h-3" />
-              </Button>
+          {/* Top bar with hamburger and title */}
+          <div className="flex items-center gap-2 mb-2">
+            <HamburgerMenu
+              userName={user?.user_metadata?.display_name || user?.email || "User"}
+              isAdmin={isAdmin}
+              isDarkMode={isDarkMode}
+              saving={saving}
+              onToggleDarkMode={toggleDarkMode}
+              onExportCSV={handleExportCSV}
+              onExportExcel={handleExportExcel}
+              onSave={handleSave}
+              onReset={() => setResetDialogOpen(true)}
+              onLogout={handleLogout}
+            />
+            
+            {/* Islamic Header Title */}
+            <div className="islamic-header flex-1">
+              <div className="islamic-pattern-left">☪</div>
+              <div className="text-center flex-1">
+                <h1 className="islamic-title text-sm md:text-lg">
+                  Mufi Hajj Umer Idris Quran Tefseer
+                </h1>
+                <p className="islamic-subtitle text-[10px] md:text-xs">
+                  Video Editing & Cassette Tracker
+                </p>
+              </div>
+              <div className="islamic-pattern-right">☪</div>
             </div>
           </div>
 
-          {/* Counter Boxes */}
-          <CounterBoxes
-            editedCount={editedCount}
-            reEditedCount={reEditedCount}
-            editedPaidCount={editedPaidCount}
-            capturedCount={capturedCount}
-            reCapturedCount={reCapturedCount}
-            capturedPaidCount={paidCount}
-          />
+          {/* Counter Boxes - Only show in progress tab */}
+          {activeTab === "progress" && (
+            <CounterBoxes
+              editedCount={editedCount}
+              reEditedCount={reEditedCount}
+              editedPaidCount={editedPaidCount}
+              capturedCount={capturedCount}
+              reCapturedCount={reCapturedCount}
+              capturedPaidCount={paidCount}
+              exportCount={exportCount}
+              onExportCountChange={handleExportCountChange}
+              isAdmin={isAdmin}
+            />
+          )}
 
           {/* Navigation Tabs */}
           <div className="flex gap-1 mt-2 pb-2">
