@@ -67,7 +67,7 @@ export type Database = {
       }
       suras_cassette_data: {
         Row: {
-          cassette_count: number | null
+          cassette_count: string | null
           id: string
           sura_name: string
           sura_number: number
@@ -75,7 +75,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
-          cassette_count?: number | null
+          cassette_count?: string | null
           id?: string
           sura_name: string
           sura_number: number
@@ -83,7 +83,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
-          cassette_count?: number | null
+          cassette_count?: string | null
           id?: string
           sura_name?: string
           sura_number?: number
