@@ -14,9 +14,10 @@ interface SuraData {
 
 interface SurasPageProps {
   isAdmin: boolean;
+  onTotalSurasChange?: (total: number) => void;
 }
 
-const SurasPage = ({ isAdmin }: SurasPageProps) => {
+const SurasPage = ({ isAdmin, onTotalSurasChange }: SurasPageProps) => {
   const { toast } = useToast();
   const [suras, setSuras] = useState<SuraData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,28 +143,53 @@ const SurasPage = ({ isAdmin }: SurasPageProps) => {
     return total + parts.length;
   }, 0);
 
+  // Notify parent of total suras change
+  useEffect(() => {
+    onTotalSurasChange?.(totalFilledSuras);
+  }, [totalFilledSuras, onTotalSurasChange]);
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-lg">Loading suras data...</div>
+      <div className="max-w-full mx-auto px-2 pb-4 space-y-4">
+        {/* Header skeleton */}
+        <div className="text-center py-3 space-y-2">
+          <div className="h-7 w-40 bg-muted animate-pulse rounded mx-auto" />
+          <div className="flex justify-center gap-2">
+            <div className="h-10 w-36 bg-muted animate-pulse rounded-full" />
+            <div className="h-10 w-36 bg-muted animate-pulse rounded-full" />
+          </div>
+        </div>
+        {/* Table skeleton */}
+        <div className="border border-border rounded-lg overflow-hidden">
+          <div className="grid grid-cols-[50px_1fr_1fr] bg-muted h-10" />
+          <div className="space-y-0">
+            {Array(12).fill(0).map((_, i) => (
+              <div key={i} className="grid grid-cols-[50px_1fr_1fr] border-b border-border">
+                <div className="h-9 bg-muted/50 animate-pulse" />
+                <div className="h-9 bg-muted/30 animate-pulse border-l border-border" />
+                <div className="h-9 bg-muted/50 animate-pulse border-l border-border" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="max-w-full mx-auto px-2 pb-4">
-      {/* Header with Total Suras and Cassettes Counter */}
+      {/* Header with Total Suras and Cassettes Counter - Side by Side */}
       <div className="text-center py-3 space-y-2">
         <h2 className="text-xl font-bold text-foreground mb-2">ሱራዎች (Suras)</h2>
-        <div className="flex flex-col items-center gap-2">
-          <div className="inline-flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-full">
-            <BookOpen className="w-5 h-5" />
-            <span className="font-bold text-lg">{totalFilledSuras} / 114</span>
-            <span className="text-sm opacity-90">Total Suras</span>
+        <div className="flex justify-center items-center gap-2">
+          <div className="inline-flex items-center gap-2 bg-emerald-500 text-white px-3 py-2 rounded-full">
+            <BookOpen className="w-4 h-4" />
+            <span className="font-bold text-sm">{totalFilledSuras}/114</span>
+            <span className="text-xs opacity-90">Suras</span>
           </div>
-          <div className="inline-flex items-center gap-2 bg-sky-500 text-white px-4 py-2 rounded-full">
-            <span className="font-bold text-lg">{totalCassettes}</span>
-            <span className="text-sm opacity-90">Total Cassettes</span>
+          <div className="inline-flex items-center gap-2 bg-sky-500 text-white px-3 py-2 rounded-full">
+            <span className="font-bold text-sm">{totalCassettes}</span>
+            <span className="text-xs opacity-90">Cassettes</span>
           </div>
         </div>
       </div>

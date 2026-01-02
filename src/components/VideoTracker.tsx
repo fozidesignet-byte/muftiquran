@@ -51,8 +51,9 @@ const VideoTracker = () => {
   const [editedPaidCells, setEditedPaidCells] = useState<boolean[]>(Array(180).fill(false));
   const [reCapturedCells, setReCapturedCells] = useState<boolean[]>(Array(180).fill(false));
   
-  // Export counter (admin editable)
+  // Export counter (now comes from suras total)
   const [exportCount, setExportCount] = useState(0);
+  const [surasExportCount, setSurasExportCount] = useState(0);
   
   // Comments
   const [comments, setComments] = useState<Comment[]>([]);
@@ -103,9 +104,10 @@ const VideoTracker = () => {
   // Load data function
   const loadData = useCallback(async (showRefreshToast = false) => {
     try {
-      const [trackerResult, commentsResult] = await Promise.all([
+      const [trackerResult, commentsResult, surasResult] = await Promise.all([
         supabase.from("tracker_data").select("*").limit(1).maybeSingle(),
         supabase.from("cell_comments").select("*").order("created_at", { ascending: false }),
+        supabase.from("suras_cassette_data").select("cassette_count"),
       ]);
 
       if (trackerResult.error) throw trackerResult.error;
@@ -122,6 +124,14 @@ const VideoTracker = () => {
       }
       
       setComments(commentsResult.data || []);
+      
+      // Calculate total suras from fetched data
+      if (surasResult.data) {
+        const filledSuras = surasResult.data.filter(
+          s => s.cassette_count && s.cassette_count.trim() !== ""
+        ).length;
+        setSurasExportCount(filledSuras);
+      }
       
       if (showRefreshToast) {
         toast({ title: "Refreshed", description: "Data updated successfully" });
@@ -716,9 +726,9 @@ const VideoTracker = () => {
               capturedCount={capturedCount}
               reCapturedCount={reCapturedCount}
               capturedPaidCount={paidCount}
-              exportCount={exportCount}
-              onExportCountChange={handleExportCountChange}
-              isAdmin={isAdmin}
+              exportCount={surasExportCount}
+              onExportCountChange={() => {}}
+              isAdmin={false}
             />
           )}
 
@@ -813,7 +823,7 @@ const VideoTracker = () => {
           </div>
         </>
       ) : activeTab === "suras" ? (
-        <SurasPage isAdmin={isAdmin} />
+        <SurasPage isAdmin={isAdmin} onTotalSurasChange={setSurasExportCount} />
       ) : (
         <SummaryPage
           editedCells={editedCells}
@@ -822,7 +832,7 @@ const VideoTracker = () => {
           capturedCells={capturedCells}
           reCapturedCells={reCapturedCells}
           paidCells={paidCells}
-          exportCount={exportCount}
+          exportCount={surasExportCount}
         />
       )}
 

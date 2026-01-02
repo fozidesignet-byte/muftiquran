@@ -122,13 +122,41 @@ const SummaryPage = ({
     </div>
   );
 
-  const SimpleCircle = ({ value, label, color }: { value: number; label: string; color: string }) => (
+  const FreezeCircle = ({ data, value, label, color }: { 
+    data: any[], 
+    value: number, 
+    label: string,
+    color: string 
+  }) => (
     <div className="flex flex-col items-center">
-      <div 
-        className="h-20 w-20 md:h-24 md:w-24 rounded-full flex items-center justify-center"
-        style={{ backgroundColor: `${color}20` }}
-      >
-        <span className="text-lg md:text-xl font-bold" style={{ color }}>{value}</span>
+      <div className="relative h-20 w-20 md:h-24 md:w-24">
+        <ResponsiveContainer width="100%" height="100%">
+          <RadialBarChart
+            cx="50%"
+            cy="50%"
+            innerRadius="70%"
+            outerRadius="100%"
+            barSize={8}
+            data={data}
+            startAngle={90}
+            endAngle={-270}
+          >
+            <PolarAngleAxis
+              type="number"
+              domain={[0, 100]}
+              angleAxisId={0}
+              tick={false}
+            />
+            <RadialBar
+              background={{ fill: "hsl(var(--muted))" }}
+              dataKey="value"
+              cornerRadius={5}
+            />
+          </RadialBarChart>
+        </ResponsiveContainer>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-lg md:text-xl font-bold" style={{ color }}>{value}</span>
+        </div>
       </div>
       <p className="text-[10px] md:text-xs font-medium mt-1 text-center">{label}</p>
     </div>
@@ -159,7 +187,8 @@ const SummaryPage = ({
               total={stats.totalCells}
               label="Total Edited"
             />
-            <SimpleCircle
+            <FreezeCircle
+              data={reEditProgressData}
               value={stats.reEdited}
               label="Re-Edit"
               color="hsl(0 40% 46%)"
@@ -196,7 +225,8 @@ const SummaryPage = ({
               total={stats.totalCells}
               label="Total Captured"
             />
-            <SimpleCircle
+            <FreezeCircle
+              data={reCapturedProgressData}
               value={stats.reCaptured}
               label="Re-Captured"
               color="hsl(0 40% 46%)"
