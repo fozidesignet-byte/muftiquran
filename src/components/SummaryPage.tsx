@@ -48,6 +48,8 @@ const SummaryPage = ({
     };
   }, [editedCells, reEditedCells, editedPaidCells, capturedCells, reCapturedCells, paidCells]);
 
+  const totalSuras = 114;
+
   // Circular progress data
   const editedProgressData = [
     { name: "progress", value: (stats.totalEdited / stats.totalCells) * 100, fill: "hsl(43 67% 60%)" },
@@ -63,6 +65,18 @@ const SummaryPage = ({
 
   const capturedPaidProgressData = [
     { name: "progress", value: (stats.capturedPaid / stats.totalCells) * 100, fill: "hsl(149 42% 53%)" },
+  ];
+
+  const reEditProgressData = [
+    { name: "progress", value: (stats.reEdited / stats.totalCells) * 100, fill: "hsl(0 40% 46%)" },
+  ];
+
+  const reCapturedProgressData = [
+    { name: "progress", value: (stats.reCaptured / stats.totalCells) * 100, fill: "hsl(0 40% 46%)" },
+  ];
+
+  const exportedProgressData = [
+    { name: "progress", value: (exportCount / totalSuras) * 100, fill: "hsl(199 89% 48%)" },
   ];
 
   const CircularProgress = ({ data, value, total, label, sublabel }: { 
@@ -133,25 +147,24 @@ const SummaryPage = ({
               total={stats.totalCells}
               label="Total Edited"
             />
-            <div className="flex flex-col items-center justify-center">
-              <div className="h-24 w-24 md:h-28 md:w-28 rounded-full bg-box-reedit/20 flex flex-col items-center justify-center">
-                <span className="text-xl md:text-2xl font-bold" style={{ color: "hsl(0 40% 46%)" }}>{stats.reEdited}</span>
-              </div>
-              <p className="text-xs md:text-sm font-medium mt-2 text-center">Re-Edit</p>
-            </div>
+            <CircularProgress
+              data={reEditProgressData}
+              value={stats.reEdited}
+              total={stats.totalCells}
+              label="Re-Edit"
+            />
             <CircularProgress
               data={editedPaidProgressData}
               value={stats.editedPaid}
               total={stats.totalCells}
               label="Paid (Edit)"
             />
-            <div className="flex flex-col items-center justify-center">
-              <div className="h-24 w-24 md:h-28 md:w-28 rounded-full bg-sky-400/20 flex flex-col items-center justify-center">
-                <FileOutput className="w-6 h-6 text-sky-500 mb-1" />
-                <span className="text-xl md:text-2xl font-bold text-sky-600">{exportCount}</span>
-              </div>
-              <p className="text-xs md:text-sm font-medium mt-2 text-center">Exported</p>
-            </div>
+            <CircularProgress
+              data={exportedProgressData}
+              value={exportCount}
+              total={totalSuras}
+              label="Exported Suras"
+            />
           </div>
         </CardContent>
       </Card>
@@ -172,12 +185,12 @@ const SummaryPage = ({
               total={stats.totalCells}
               label="Total Captured"
             />
-            <div className="flex flex-col items-center justify-center">
-              <div className="h-24 w-24 md:h-28 md:w-28 rounded-full bg-box-maroon/20 flex flex-col items-center justify-center">
-                <span className="text-xl md:text-2xl font-bold" style={{ color: "hsl(0 40% 46%)" }}>{stats.reCaptured}</span>
-              </div>
-              <p className="text-xs md:text-sm font-medium mt-2 text-center">Re-Captured</p>
-            </div>
+            <CircularProgress
+              data={reCapturedProgressData}
+              value={stats.reCaptured}
+              total={stats.totalCells}
+              label="Re-Captured"
+            />
             <CircularProgress
               data={capturedPaidProgressData}
               value={stats.capturedPaid}
