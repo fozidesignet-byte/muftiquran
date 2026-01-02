@@ -135,6 +135,13 @@ const SurasPage = ({ isAdmin }: SurasPageProps) => {
   // Calculate total suras that have cassette data
   const totalFilledSuras = suras.filter(s => s.cassette_count && s.cassette_count.trim() !== "").length;
 
+  // Calculate total cassettes by counting all numbers (before and after commas)
+  const totalCassettes = suras.reduce((total, sura) => {
+    if (!sura.cassette_count || sura.cassette_count.trim() === "") return total;
+    const parts = sura.cassette_count.split(',').map(p => p.trim()).filter(p => /^\d+$/.test(p));
+    return total + parts.length;
+  }, 0);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -145,13 +152,19 @@ const SurasPage = ({ isAdmin }: SurasPageProps) => {
 
   return (
     <div className="max-w-full mx-auto px-2 pb-4">
-      {/* Header with Total Suras Counter */}
-      <div className="text-center py-3">
+      {/* Header with Total Suras and Cassettes Counter */}
+      <div className="text-center py-3 space-y-2">
         <h2 className="text-xl font-bold text-foreground mb-2">ሱራዎች (Suras)</h2>
-        <div className="inline-flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-full">
-          <BookOpen className="w-5 h-5" />
-          <span className="font-bold text-lg">{totalFilledSuras} / 114</span>
-          <span className="text-sm opacity-90">Total Suras</span>
+        <div className="flex flex-col items-center gap-2">
+          <div className="inline-flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-full">
+            <BookOpen className="w-5 h-5" />
+            <span className="font-bold text-lg">{totalFilledSuras} / 114</span>
+            <span className="text-sm opacity-90">Total Suras</span>
+          </div>
+          <div className="inline-flex items-center gap-2 bg-sky-500 text-white px-4 py-2 rounded-full">
+            <span className="font-bold text-lg">{totalCassettes}</span>
+            <span className="text-sm opacity-90">Total Cassettes</span>
+          </div>
         </div>
       </div>
 
