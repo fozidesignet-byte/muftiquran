@@ -101,8 +101,8 @@ const VideoTracker = () => {
     return () => window.removeEventListener("resize", updateHeaderHeight);
   }, []);
 
-  // Calculate exported count based on cassettes NOT marked with R (re-captured)
-  const calculateExportedCount = useCallback((surasData: { cassette_count: string | null }[], reCaptured: boolean[]) => {
+  // Calculate exported count based on cassettes NOT marked with R (re-edited) in Edited section
+  const calculateExportedCount = useCallback((surasData: { cassette_count: string | null }[], reEdited: boolean[]) => {
     let count = 0;
     surasData.forEach(sura => {
       if (sura.cassette_count && sura.cassette_count.trim() !== "") {
@@ -112,9 +112,9 @@ const VideoTracker = () => {
           .map(n => parseInt(n.trim(), 10))
           .filter(n => !isNaN(n) && n >= 1 && n <= 180);
         
-        // Count cassettes where R is NOT enabled
+        // Count cassettes where R is NOT enabled in Edited section
         cassetteNumbers.forEach(cassetteNum => {
-          if (!reCaptured[cassetteNum - 1]) {
+          if (!reEdited[cassetteNum - 1]) {
             count++;
           }
         });
@@ -135,7 +135,7 @@ const VideoTracker = () => {
       if (trackerResult.error) throw trackerResult.error;
       if (commentsResult.error) throw commentsResult.error;
 
-      const reCaptured = trackerResult.data?.re_captured_cells || Array(180).fill(false);
+      const reEdited = trackerResult.data?.re_edited_cells || Array(180).fill(false);
 
       if (trackerResult.data) {
         setEditedCells(trackerResult.data.edited_cells || Array(180).fill(false));
@@ -143,15 +143,15 @@ const VideoTracker = () => {
         setPaidCells(trackerResult.data.paid_cells || Array(180).fill(false));
         setReEditedCells(trackerResult.data.re_edited_cells || Array(180).fill(false));
         setEditedPaidCells(trackerResult.data.edited_paid_cells || Array(180).fill(false));
-        setReCapturedCells(reCaptured);
+        setReCapturedCells(trackerResult.data.re_captured_cells || Array(180).fill(false));
         setExportCount((trackerResult.data as any).export_count || 0);
       }
       
       setComments(commentsResult.data || []);
       
-      // Calculate exported count: cassettes from suras where R is NOT enabled
+      // Calculate exported count: cassettes from suras where R is NOT enabled in Edited section
       if (surasResult.data) {
-        const exportedCount = calculateExportedCount(surasResult.data, reCaptured);
+        const exportedCount = calculateExportedCount(surasResult.data, reEdited);
         setSurasExportCount(exportedCount);
       }
       
