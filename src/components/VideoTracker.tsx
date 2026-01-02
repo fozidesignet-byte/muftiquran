@@ -101,41 +101,17 @@ const VideoTracker = () => {
     return () => window.removeEventListener("resize", updateHeaderHeight);
   }, []);
 
-  // Calculate exported count based on cassettes NOT marked with R (re-edited) in Edited section
-  const calculateExportedCount = useCallback((surasData: { cassette_count: string | null }[], reEdited: boolean[]) => {
-    let count = 0;
-    surasData.forEach(sura => {
-      if (sura.cassette_count && sura.cassette_count.trim() !== "") {
-        // Parse cassette numbers (e.g., "168, 167, 169" -> [168, 167, 169])
-        const cassetteNumbers = sura.cassette_count
-          .split(",")
-          .map(n => parseInt(n.trim(), 10))
-          .filter(n => !isNaN(n) && n >= 1 && n <= 180);
-        
-        // Count cassettes where R is NOT enabled in Edited section
-        cassetteNumbers.forEach(cassetteNum => {
-          if (!reEdited[cassetteNum - 1]) {
-            count++;
-          }
-        });
-      }
-    });
-    return count;
-  }, []);
-
   // Load data function
   const loadData = useCallback(async (showRefreshToast = false) => {
     try {
       const [trackerResult, commentsResult, surasResult] = await Promise.all([
         supabase.from("tracker_data").select("*").limit(1).maybeSingle(),
         supabase.from("cell_comments").select("*").order("created_at", { ascending: false }),
-        supabase.from("suras_cassette_data").select("cassette_count"),
+        supabase.from("suras_cassette_data").select("is_exported"),
       ]);
 
       if (trackerResult.error) throw trackerResult.error;
       if (commentsResult.error) throw commentsResult.error;
-
-      const reEdited = trackerResult.data?.re_edited_cells || Array(180).fill(false);
 
       if (trackerResult.data) {
         setEditedCells(trackerResult.data.edited_cells || Array(180).fill(false));
@@ -149,9 +125,9 @@ const VideoTracker = () => {
       
       setComments(commentsResult.data || []);
       
-      // Calculate exported count: cassettes from suras where R is NOT enabled in Edited section
+      // Count exported suras (ones marked green in Suras section)
       if (surasResult.data) {
-        const exportedCount = calculateExportedCount(surasResult.data, reEdited);
+        const exportedCount = surasResult.data.filter(s => s.is_exported).length;
         setSurasExportCount(exportedCount);
       }
       
@@ -169,7 +145,7 @@ const VideoTracker = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [toast, calculateExportedCount]);
+  }, [toast]);
 
   // Load data on mount
   useEffect(() => {
@@ -845,7 +821,7 @@ const VideoTracker = () => {
           </div>
         </>
       ) : activeTab === "suras" ? (
-        <SurasPage isAdmin={isAdmin} onTotalSurasChange={setSurasExportCount} />
+        <SurasPage isAdmin={isAdmin} onExportedSurasChange={setSurasExportCount} />
       ) : (
         <SummaryPage
           editedCells={editedCells}

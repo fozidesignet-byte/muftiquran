@@ -3,21 +3,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Check } from "lucide-react";
 
 interface SuraData {
   id: string;
   sura_number: number;
   sura_name: string;
   cassette_count: string | null;
+  is_exported: boolean;
 }
 
 interface SurasPageProps {
   isAdmin: boolean;
-  onTotalSurasChange?: (total: number) => void;
+  onExportedSurasChange?: (count: number) => void;
 }
 
-const SurasPage = ({ isAdmin, onTotalSurasChange }: SurasPageProps) => {
+const SurasPage = ({ isAdmin, onExportedSurasChange }: SurasPageProps) => {
   const { toast } = useToast();
   const [suras, setSuras] = useState<SuraData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +35,11 @@ const SurasPage = ({ isAdmin, onTotalSurasChange }: SurasPageProps) => {
           .order("sura_number", { ascending: true });
 
         if (error) throw error;
-        setSuras(data?.map(d => ({ ...d, cassette_count: d.cassette_count?.toString() || null })) as SuraData[] || []);
+        setSuras(data?.map(d => ({ 
+          ...d, 
+          cassette_count: d.cassette_count?.toString() || null,
+          is_exported: d.is_exported || false
+        })) as SuraData[] || []);
       } catch (error) {
         console.error("Error loading suras:", error);
         toast({
@@ -62,7 +67,11 @@ const SurasPage = ({ isAdmin, onTotalSurasChange }: SurasPageProps) => {
             .from("suras_cassette_data")
             .select("*")
             .order("sura_number", { ascending: true });
-          if (data) setSuras(data.map(d => ({ ...d, cassette_count: d.cassette_count?.toString() || null })) as SuraData[]);
+          if (data) setSuras(data.map(d => ({ 
+            ...d, 
+            cassette_count: d.cassette_count?.toString() || null,
+            is_exported: d.is_exported || false
+          })) as SuraData[]);
         }
       )
       .subscribe();
@@ -71,6 +80,35 @@ const SurasPage = ({ isAdmin, onTotalSurasChange }: SurasPageProps) => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const handleSuraNameClick = async (sura: SuraData) => {
+    if (!isAdmin) return;
+    
+    const newExportedState = !sura.is_exported;
+    
+    try {
+      const { error } = await supabase
+        .from("suras_cassette_data")
+        .update({ 
+          is_exported: newExportedState,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", sura.id);
+
+      if (error) throw error;
+      
+      setSuras(prev => prev.map(s => 
+        s.id === sura.id ? { ...s, is_exported: newExportedState } : s
+      ));
+    } catch (error) {
+      console.error("Error updating sura exported status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update sura status.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleCellClick = (sura: SuraData) => {
     if (!isAdmin) return;
@@ -143,10 +181,13 @@ const SurasPage = ({ isAdmin, onTotalSurasChange }: SurasPageProps) => {
     return total + parts.length;
   }, 0);
 
-  // Notify parent of total suras change
+  // Count exported suras (green selected ones)
+  const exportedSurasCount = suras.filter(s => s.is_exported).length;
+
+  // Notify parent of exported suras change
   useEffect(() => {
-    onTotalSurasChange?.(totalFilledSuras);
-  }, [totalFilledSuras, onTotalSurasChange]);
+    onExportedSurasChange?.(exportedSurasCount);
+  }, [exportedSurasCount, onExportedSurasChange]);
 
   if (loading) {
     return (
@@ -215,8 +256,14 @@ const SurasPage = ({ isAdmin, onTotalSurasChange }: SurasPageProps) => {
               <div className="py-2 px-2 text-center font-medium border-r border-border">
                 {sura.sura_number}
               </div>
-              <div className="py-2 px-2 text-center border-r border-border">
-                {sura.sura_name}
+              <div 
+                className={`py-2 px-2 text-center border-r border-border flex items-center justify-center gap-1 transition-colors ${
+                  isAdmin ? 'cursor-pointer hover:bg-muted' : ''
+                } ${sura.is_exported ? 'bg-emerald-500 text-white' : ''}`}
+                onClick={() => handleSuraNameClick(sura)}
+              >
+                {sura.is_exported && <Check className="w-3 h-3" />}
+                <span>{sura.sura_name}</span>
               </div>
               <div 
                 className={`py-1 px-1 text-center ${isAdmin ? 'cursor-pointer hover:bg-muted' : ''}`}
