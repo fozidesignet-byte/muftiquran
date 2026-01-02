@@ -10,7 +10,7 @@ import SurasPage from "./SurasPage";
 import HamburgerMenu from "./HamburgerMenu";
 import NotificationBell from "./NotificationBell";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Grid3X3, BookOpen } from "lucide-react";
+import { BarChart3, Grid3X3, BookOpen, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,6 +64,13 @@ const VideoTracker = () => {
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // Pull to refresh state
+  const [pullStartY, setPullStartY] = useState(0);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
+  const pullThreshold = 80;
   const [isDarkMode, setIsDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark');
@@ -93,44 +100,77 @@ const VideoTracker = () => {
     return () => window.removeEventListener("resize", updateHeaderHeight);
   }, []);
 
-  // Load data from database
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [trackerResult, commentsResult] = await Promise.all([
-          supabase.from("tracker_data").select("*").limit(1).maybeSingle(),
-          supabase.from("cell_comments").select("*").order("created_at", { ascending: false }),
-        ]);
+  // Load data function
+  const loadData = useCallback(async (showRefreshToast = false) => {
+    try {
+      const [trackerResult, commentsResult] = await Promise.all([
+        supabase.from("tracker_data").select("*").limit(1).maybeSingle(),
+        supabase.from("cell_comments").select("*").order("created_at", { ascending: false }),
+      ]);
 
-        if (trackerResult.error) throw trackerResult.error;
-        if (commentsResult.error) throw commentsResult.error;
+      if (trackerResult.error) throw trackerResult.error;
+      if (commentsResult.error) throw commentsResult.error;
 
-        if (trackerResult.data) {
-          setEditedCells(trackerResult.data.edited_cells || Array(180).fill(false));
-          setCapturedCells(trackerResult.data.captured_cells || Array(180).fill(false));
-          setPaidCells(trackerResult.data.paid_cells || Array(180).fill(false));
-          setReEditedCells(trackerResult.data.re_edited_cells || Array(180).fill(false));
-          setEditedPaidCells(trackerResult.data.edited_paid_cells || Array(180).fill(false));
-          setReCapturedCells(trackerResult.data.re_captured_cells || Array(180).fill(false));
-          // Load export count from database
-          setExportCount((trackerResult.data as any).export_count || 0);
-        }
-        
-        setComments(commentsResult.data || []);
-      } catch (error) {
-        console.error("Error loading data:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load tracker data.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+      if (trackerResult.data) {
+        setEditedCells(trackerResult.data.edited_cells || Array(180).fill(false));
+        setCapturedCells(trackerResult.data.captured_cells || Array(180).fill(false));
+        setPaidCells(trackerResult.data.paid_cells || Array(180).fill(false));
+        setReEditedCells(trackerResult.data.re_edited_cells || Array(180).fill(false));
+        setEditedPaidCells(trackerResult.data.edited_paid_cells || Array(180).fill(false));
+        setReCapturedCells(trackerResult.data.re_captured_cells || Array(180).fill(false));
+        setExportCount((trackerResult.data as any).export_count || 0);
       }
-    };
-
-    loadData();
+      
+      setComments(commentsResult.data || []);
+      
+      if (showRefreshToast) {
+        toast({ title: "Refreshed", description: "Data updated successfully" });
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load tracker data.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [toast]);
+
+  // Load data on mount
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Pull to refresh handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (window.scrollY === 0 && activeTab === "progress") {
+      setPullStartY(e.touches[0].clientY);
+      setIsPulling(true);
+    }
+  }, [activeTab]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isPulling || refreshing) return;
+    
+    const currentY = e.touches[0].clientY;
+    const distance = currentY - pullStartY;
+    
+    if (distance > 0 && window.scrollY === 0) {
+      setPullDistance(Math.min(distance * 0.5, pullThreshold * 1.5));
+    }
+  }, [isPulling, pullStartY, refreshing, pullThreshold]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (pullDistance >= pullThreshold && !refreshing) {
+      setRefreshing(true);
+      loadData(true);
+    }
+    setPullDistance(0);
+    setIsPulling(false);
+  }, [pullDistance, pullThreshold, refreshing, loadData]);
 
   // Subscribe to realtime updates
   useEffect(() => {
@@ -601,7 +641,30 @@ const VideoTracker = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div 
+      className="min-h-screen bg-background"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Pull to refresh indicator */}
+      {(pullDistance > 0 || refreshing) && (
+        <div 
+          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm transition-all"
+          style={{ height: refreshing ? 50 : pullDistance }}
+        >
+          <RefreshCw 
+            className={`w-6 h-6 text-primary transition-transform ${refreshing ? 'animate-spin' : ''}`}
+            style={{ 
+              transform: refreshing ? undefined : `rotate(${pullDistance * 2}deg)`,
+              opacity: Math.min(pullDistance / pullThreshold, 1)
+            }}
+          />
+          {pullDistance >= pullThreshold && !refreshing && (
+            <span className="ml-2 text-sm text-muted-foreground">Release to refresh</span>
+          )}
+        </div>
+      )}
       {/* Sticky Header */}
       <div className="sticky-header" ref={headerRef}>
         <div className="w-full px-2 pt-2">
