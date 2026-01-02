@@ -6,10 +6,11 @@ import CommentDialog from "./CommentDialog";
 import ResetPasswordDialog from "./ResetPasswordDialog";
 import StickyScrollHeader from "./StickyScrollHeader";
 import SummaryPage from "./SummaryPage";
+import SurasPage from "./SurasPage";
 import HamburgerMenu from "./HamburgerMenu";
 import NotificationBell from "./NotificationBell";
 import { Button } from "@/components/ui/button";
-import { BarChart3, Grid3X3 } from "lucide-react";
+import { BarChart3, Grid3X3, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,7 +39,7 @@ const VideoTracker = () => {
   const [headerHeight, setHeaderHeight] = useState(0);
   
   // Navigation state
-  const [activeTab, setActiveTab] = useState<"progress" | "summary">("progress");
+  const [activeTab, setActiveTab] = useState<"progress" | "summary" | "suras">("progress");
   
   // Main cells
   const [editedCells, setEditedCells] = useState<boolean[]>(Array(180).fill(false));
@@ -595,11 +596,14 @@ const VideoTracker = () => {
             
             {/* Center content */}
             <div className="text-center flex-1 min-w-0 px-2">
-              <h1 className="islamic-title text-xs sm:text-sm md:text-lg truncate">
+              <h1 className="islamic-title">
                 Mufi Hajj Umer Idris Quran Tefseer
               </h1>
-              <p className="islamic-subtitle text-[9px] sm:text-[10px] md:text-xs truncate">
+              <p className="islamic-subtitle">
                 Video Editing & Cassette Tracker
+              </p>
+              <p className="islamic-subtitle-amharic">
+                የቁርአን ተፍሲር ቪዲዮ ኤዲቲንግ እና ካሴት ትራከር
               </p>
             </div>
 
@@ -638,6 +642,15 @@ const VideoTracker = () => {
             >
               <Grid3X3 className="w-3 h-3" />
               Progress
+            </Button>
+            <Button 
+              variant={activeTab === "suras" ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => setActiveTab("suras")}
+              className="flex-1 gap-1"
+            >
+              <BookOpen className="w-3 h-3" />
+              Suras
             </Button>
             <Button 
               variant={activeTab === "summary" ? "default" : "outline"} 
@@ -709,6 +722,8 @@ const VideoTracker = () => {
             />
           </div>
         </>
+      ) : activeTab === "suras" ? (
+        <SurasPage isAdmin={isAdmin} />
       ) : (
         <SummaryPage
           editedCells={editedCells}
@@ -717,6 +732,7 @@ const VideoTracker = () => {
           capturedCells={capturedCells}
           reCapturedCells={reCapturedCells}
           paidCells={paidCells}
+          exportCount={exportCount}
         />
       )}
 

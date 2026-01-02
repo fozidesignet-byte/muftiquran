@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { ResponsiveContainer, RadialBarChart, RadialBar, PolarAngleAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileOutput } from "lucide-react";
 
 interface SummaryPageProps {
   editedCells: boolean[];
@@ -9,6 +10,7 @@ interface SummaryPageProps {
   capturedCells: boolean[];
   reCapturedCells: boolean[];
   paidCells: boolean[];
+  exportCount: number;
 }
 
 const SummaryPage = ({
@@ -18,6 +20,7 @@ const SummaryPage = ({
   capturedCells,
   reCapturedCells,
   paidCells,
+  exportCount,
 }: SummaryPageProps) => {
   const stats = useMemo(() => {
     const totalCells = 180;
@@ -112,6 +115,19 @@ const SummaryPage = ({
         <h2 className="text-xl font-bold text-foreground mb-1">Progress Summary</h2>
         <p className="text-sm text-muted-foreground">Overview of video editing and cassette capture progress</p>
       </div>
+
+      {/* Total Exported Section */}
+      <Card className="bg-sky-400 text-white">
+        <CardContent className="py-4">
+          <div className="flex items-center justify-center gap-3">
+            <FileOutput className="w-8 h-8" />
+            <div className="text-center">
+              <p className="text-sm font-medium opacity-90">Total Exported Suras</p>
+              <p className="text-4xl font-bold">{exportCount}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Row 1: Edited Videos Section */}
       <Card>

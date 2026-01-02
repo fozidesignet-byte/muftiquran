@@ -65,6 +65,33 @@ export type Database = {
         }
         Relationships: []
       }
+      suras_cassette_data: {
+        Row: {
+          cassette_count: number | null
+          id: string
+          sura_name: string
+          sura_number: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cassette_count?: number | null
+          id?: string
+          sura_name: string
+          sura_number: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cassette_count?: number | null
+          id?: string
+          sura_name?: string
+          sura_number?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       tracker_data: {
         Row: {
           captured_cells: boolean[]
