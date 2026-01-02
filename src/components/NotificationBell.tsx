@@ -26,6 +26,17 @@ interface NotificationBellProps {
   onNavigateToComment: (cellIndex: number, section: string) => void;
 }
 
+// Trigger vibration on mobile devices
+const triggerVibration = () => {
+  try {
+    if ('vibrate' in navigator) {
+      navigator.vibrate([100, 50, 100]); // Vibrate pattern: vibrate 100ms, pause 50ms, vibrate 100ms
+    }
+  } catch (error) {
+    console.log("Vibration not supported:", error);
+  }
+};
+
 // Create a notification sound using Web Audio API
 const playNotificationSound = () => {
   try {
@@ -45,6 +56,9 @@ const playNotificationSound = () => {
     
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.3);
+    
+    // Also trigger vibration
+    triggerVibration();
   } catch (error) {
     console.log("Could not play notification sound:", error);
   }
@@ -136,7 +150,11 @@ const NotificationBell = ({ userId, comments, onNavigateToComment }: Notificatio
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative h-9 w-9 shrink-0">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="relative h-9 w-9 shrink-0 text-amber-200 hover:text-amber-100 hover:bg-white/10"
+        >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
             <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold animate-pulse">

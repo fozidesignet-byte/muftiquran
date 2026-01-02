@@ -52,7 +52,11 @@ const HamburgerMenu = ({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" className="h-9 w-9">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-9 w-9 shrink-0 text-amber-200 hover:text-amber-100 hover:bg-white/10"
+        >
           <Menu className="h-5 w-5" />
         </Button>
       </SheetTrigger>

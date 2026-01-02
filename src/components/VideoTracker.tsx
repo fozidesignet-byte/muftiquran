@@ -577,9 +577,9 @@ const VideoTracker = () => {
       {/* Sticky Header */}
       <div className="sticky-header" ref={headerRef}>
         <div className="w-full px-2 pt-2">
-          {/* Full-width header bar */}
-          <div className="flex items-center w-full gap-2 mb-2 bg-card/80 backdrop-blur-sm rounded-lg p-2 border border-border/50">
-            {/* Hamburger Menu */}
+          {/* Islamic Header with icons inside */}
+          <div className="islamic-header mb-2">
+            {/* Hamburger Menu - Left side */}
             <HamburgerMenu
               userName={user?.user_metadata?.display_name || user?.email || "User"}
               isAdmin={isAdmin}
@@ -593,21 +593,17 @@ const VideoTracker = () => {
               onLogout={handleLogout}
             />
             
-            {/* Islamic Header Title - takes remaining space */}
-            <div className="islamic-header flex-1 min-w-0">
-              <div className="islamic-pattern-left hidden sm:block">☪</div>
-              <div className="text-center flex-1 min-w-0">
-                <h1 className="islamic-title text-xs sm:text-sm md:text-lg truncate">
-                  Mufi Hajj Umer Idris Quran Tefseer
-                </h1>
-                <p className="islamic-subtitle text-[9px] sm:text-[10px] md:text-xs truncate">
-                  Video Editing & Cassette Tracker
-                </p>
-              </div>
-              <div className="islamic-pattern-right hidden sm:block">☪</div>
+            {/* Center content */}
+            <div className="text-center flex-1 min-w-0 px-2">
+              <h1 className="islamic-title text-xs sm:text-sm md:text-lg truncate">
+                Mufi Hajj Umer Idris Quran Tefseer
+              </h1>
+              <p className="islamic-subtitle text-[9px] sm:text-[10px] md:text-xs truncate">
+                Video Editing & Cassette Tracker
+              </p>
             </div>
 
-            {/* Notification Bell */}
+            {/* Notification Bell - Right side */}
             {user && (
               <NotificationBell
                 userId={user.id}
