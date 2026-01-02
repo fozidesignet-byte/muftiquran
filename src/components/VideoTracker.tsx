@@ -101,6 +101,28 @@ const VideoTracker = () => {
     return () => window.removeEventListener("resize", updateHeaderHeight);
   }, []);
 
+  // Calculate exported count based on cassettes NOT marked with R (re-captured)
+  const calculateExportedCount = useCallback((surasData: { cassette_count: string | null }[], reCaptured: boolean[]) => {
+    let count = 0;
+    surasData.forEach(sura => {
+      if (sura.cassette_count && sura.cassette_count.trim() !== "") {
+        // Parse cassette numbers (e.g., "168, 167, 169" -> [168, 167, 169])
+        const cassetteNumbers = sura.cassette_count
+          .split(",")
+          .map(n => parseInt(n.trim(), 10))
+          .filter(n => !isNaN(n) && n >= 1 && n <= 180);
+        
+        // Count cassettes where R is NOT enabled
+        cassetteNumbers.forEach(cassetteNum => {
+          if (!reCaptured[cassetteNum - 1]) {
+            count++;
+          }
+        });
+      }
+    });
+    return count;
+  }, []);
+
   // Load data function
   const loadData = useCallback(async (showRefreshToast = false) => {
     try {
@@ -113,24 +135,24 @@ const VideoTracker = () => {
       if (trackerResult.error) throw trackerResult.error;
       if (commentsResult.error) throw commentsResult.error;
 
+      const reCaptured = trackerResult.data?.re_captured_cells || Array(180).fill(false);
+
       if (trackerResult.data) {
         setEditedCells(trackerResult.data.edited_cells || Array(180).fill(false));
         setCapturedCells(trackerResult.data.captured_cells || Array(180).fill(false));
         setPaidCells(trackerResult.data.paid_cells || Array(180).fill(false));
         setReEditedCells(trackerResult.data.re_edited_cells || Array(180).fill(false));
         setEditedPaidCells(trackerResult.data.edited_paid_cells || Array(180).fill(false));
-        setReCapturedCells(trackerResult.data.re_captured_cells || Array(180).fill(false));
+        setReCapturedCells(reCaptured);
         setExportCount((trackerResult.data as any).export_count || 0);
       }
       
       setComments(commentsResult.data || []);
       
-      // Calculate total suras from fetched data
+      // Calculate exported count: cassettes from suras where R is NOT enabled
       if (surasResult.data) {
-        const filledSuras = surasResult.data.filter(
-          s => s.cassette_count && s.cassette_count.trim() !== ""
-        ).length;
-        setSurasExportCount(filledSuras);
+        const exportedCount = calculateExportedCount(surasResult.data, reCaptured);
+        setSurasExportCount(exportedCount);
       }
       
       if (showRefreshToast) {
@@ -147,7 +169,7 @@ const VideoTracker = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [toast]);
+  }, [toast, calculateExportedCount]);
 
   // Load data on mount
   useEffect(() => {
