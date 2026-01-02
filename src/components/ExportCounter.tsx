@@ -30,15 +30,15 @@ const ExportCounter = ({ value, onChange, isAdmin }: ExportCounterProps) => {
 
   if (!isAdmin) {
     return (
-      <div className="bg-primary/10 p-2 md:p-3 rounded-md text-center shadow-sm">
-        <div className="text-xl md:text-2xl font-bold text-primary">{value}</div>
-        <div className="text-[10px] md:text-xs font-medium text-muted-foreground">Exported</div>
+      <div className="bg-sky-400 p-2 md:p-3 rounded-md text-center shadow-sm">
+        <div className="text-xl md:text-2xl font-bold text-white">{value}</div>
+        <div className="text-[10px] md:text-xs font-medium text-white/90">Exported</div>
       </div>
     );
   }
 
   return (
-    <div className="bg-primary/10 p-2 md:p-3 rounded-md text-center shadow-sm">
+    <div className="bg-sky-400 p-2 md:p-3 rounded-md text-center shadow-sm">
       {isEditing ? (
         <div className="flex items-center gap-1">
           <Input
@@ -61,11 +61,11 @@ const ExportCounter = ({ value, onChange, isAdmin }: ExportCounterProps) => {
           className="cursor-pointer hover:opacity-80 transition-opacity"
           onClick={() => setIsEditing(true)}
         >
-          <div className="text-xl md:text-2xl font-bold text-primary flex items-center justify-center gap-1">
+          <div className="text-xl md:text-2xl font-bold text-white flex items-center justify-center gap-1">
             {value}
             <Edit2 className="w-3 h-3 opacity-50" />
           </div>
-          <div className="text-[10px] md:text-xs font-medium text-muted-foreground">Exported</div>
+          <div className="text-[10px] md:text-xs font-medium text-white/90">Exported</div>
         </div>
       )}
     </div>
