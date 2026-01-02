@@ -87,14 +87,14 @@ const SummaryPage = ({
     sublabel?: string 
   }) => (
     <div className="flex flex-col items-center">
-      <div className="relative h-24 w-24 md:h-28 md:w-28">
+      <div className="relative h-20 w-20 md:h-24 md:w-24">
         <ResponsiveContainer width="100%" height="100%">
           <RadialBarChart
             cx="50%"
             cy="50%"
             innerRadius="70%"
             outerRadius="100%"
-            barSize={10}
+            barSize={8}
             data={data}
             startAngle={90}
             endAngle={-270}
@@ -113,12 +113,24 @@ const SummaryPage = ({
           </RadialBarChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-xl md:text-2xl font-bold">{value}</span>
-          <span className="text-[10px] text-muted-foreground">/{total}</span>
+          <span className="text-lg md:text-xl font-bold">{value}</span>
+          <span className="text-[9px] text-muted-foreground">/{total}</span>
         </div>
       </div>
-      <p className="text-xs md:text-sm font-medium mt-2 text-center">{label}</p>
-      {sublabel && <p className="text-[10px] text-muted-foreground">{sublabel}</p>}
+      <p className="text-[10px] md:text-xs font-medium mt-1 text-center">{label}</p>
+      {sublabel && <p className="text-[9px] text-muted-foreground">{sublabel}</p>}
+    </div>
+  );
+
+  const SimpleCircle = ({ value, label, color }: { value: number; label: string; color: string }) => (
+    <div className="flex flex-col items-center">
+      <div 
+        className="h-20 w-20 md:h-24 md:w-24 rounded-full flex items-center justify-center"
+        style={{ backgroundColor: `${color}20` }}
+      >
+        <span className="text-lg md:text-xl font-bold" style={{ color }}>{value}</span>
+      </div>
+      <p className="text-[10px] md:text-xs font-medium mt-1 text-center">{label}</p>
     </div>
   );
 
@@ -147,11 +159,10 @@ const SummaryPage = ({
               total={stats.totalCells}
               label="Total Edited"
             />
-            <CircularProgress
-              data={reEditProgressData}
+            <SimpleCircle
               value={stats.reEdited}
-              total={stats.totalCells}
               label="Re-Edit"
+              color="hsl(0 40% 46%)"
             />
             <CircularProgress
               data={editedPaidProgressData}
@@ -185,11 +196,10 @@ const SummaryPage = ({
               total={stats.totalCells}
               label="Total Captured"
             />
-            <CircularProgress
-              data={reCapturedProgressData}
+            <SimpleCircle
               value={stats.reCaptured}
-              total={stats.totalCells}
               label="Re-Captured"
+              color="hsl(0 40% 46%)"
             />
             <CircularProgress
               data={capturedPaidProgressData}

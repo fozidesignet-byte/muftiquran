@@ -567,8 +567,35 @@ const VideoTracker = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-lg">Loading tracker data...</div>
+      <div className="min-h-screen bg-background p-4 space-y-4">
+        {/* Header skeleton */}
+        <div className="h-24 bg-muted animate-pulse rounded-lg" />
+        {/* Counter boxes skeleton */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="h-16 bg-muted animate-pulse rounded-lg" />
+          <div className="h-16 bg-muted animate-pulse rounded-lg" />
+          <div className="h-16 bg-muted animate-pulse rounded-lg" />
+        </div>
+        {/* Tabs skeleton */}
+        <div className="flex gap-2 justify-center">
+          <div className="h-10 w-28 bg-muted animate-pulse rounded-lg" />
+          <div className="h-10 w-28 bg-muted animate-pulse rounded-lg" />
+          <div className="h-10 w-28 bg-muted animate-pulse rounded-lg" />
+        </div>
+        {/* Content skeleton */}
+        <div className="space-y-3">
+          <div className="h-8 bg-muted animate-pulse rounded-lg w-1/2 mx-auto" />
+          <div className="grid grid-cols-6 gap-1">
+            {Array(36).fill(0).map((_, i) => (
+              <div key={i} className="h-10 bg-muted animate-pulse rounded" />
+            ))}
+          </div>
+          <div className="grid grid-cols-6 gap-1">
+            {Array(36).fill(0).map((_, i) => (
+              <div key={i} className="h-10 bg-muted animate-pulse rounded" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
