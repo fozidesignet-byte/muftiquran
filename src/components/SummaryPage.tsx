@@ -116,18 +116,6 @@ const SummaryPage = ({
         <p className="text-sm text-muted-foreground">Overview of video editing and cassette capture progress</p>
       </div>
 
-      {/* Total Exported Section */}
-      <Card className="bg-sky-400 text-white">
-        <CardContent className="py-4">
-          <div className="flex items-center justify-center gap-3">
-            <FileOutput className="w-8 h-8" />
-            <div className="text-center">
-              <p className="text-sm font-medium opacity-90">Total Exported Suras</p>
-              <p className="text-4xl font-bold">{exportCount}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Row 1: Edited Videos Section */}
       <Card>
@@ -138,7 +126,7 @@ const SummaryPage = ({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-3">
             <CircularProgress
               data={editedProgressData}
               value={stats.totalEdited}
@@ -157,6 +145,13 @@ const SummaryPage = ({
               total={stats.totalCells}
               label="Paid (Edit)"
             />
+            <div className="flex flex-col items-center justify-center">
+              <div className="h-24 w-24 md:h-28 md:w-28 rounded-full bg-sky-400/20 flex flex-col items-center justify-center">
+                <FileOutput className="w-6 h-6 text-sky-500 mb-1" />
+                <span className="text-xl md:text-2xl font-bold text-sky-600">{exportCount}</span>
+              </div>
+              <p className="text-xs md:text-sm font-medium mt-2 text-center">Exported</p>
+            </div>
           </div>
         </CardContent>
       </Card>

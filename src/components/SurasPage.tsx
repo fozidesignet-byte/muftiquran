@@ -3,12 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { BookOpen } from "lucide-react";
 
 interface SuraData {
   id: string;
   sura_number: number;
   sura_name: string;
-  cassette_count: number | null;
+  cassette_count: string | null;
 }
 
 interface SurasPageProps {
@@ -32,7 +33,7 @@ const SurasPage = ({ isAdmin }: SurasPageProps) => {
           .order("sura_number", { ascending: true });
 
         if (error) throw error;
-        setSuras((data as SuraData[]) || []);
+        setSuras(data?.map(d => ({ ...d, cassette_count: d.cassette_count?.toString() || null })) as SuraData[] || []);
       } catch (error) {
         console.error("Error loading suras:", error);
         toast({
@@ -60,7 +61,7 @@ const SurasPage = ({ isAdmin }: SurasPageProps) => {
             .from("suras_cassette_data")
             .select("*")
             .order("sura_number", { ascending: true });
-          if (data) setSuras(data as SuraData[]);
+          if (data) setSuras(data.map(d => ({ ...d, cassette_count: d.cassette_count?.toString() || null })) as SuraData[]);
         }
       )
       .subscribe();
@@ -73,26 +74,31 @@ const SurasPage = ({ isAdmin }: SurasPageProps) => {
   const handleCellClick = (sura: SuraData) => {
     if (!isAdmin) return;
     setEditingId(sura.id);
-    setEditValue(sura.cassette_count?.toString() || "");
+    setEditValue(sura.cassette_count || "");
   };
 
   const handleSave = async (suraId: string) => {
-    const numValue = editValue === "" ? null : parseInt(editValue, 10);
+    const trimmedValue = editValue.trim();
     
-    if (editValue !== "" && (isNaN(numValue as number) || (numValue as number) < 0)) {
-      toast({
-        title: "Invalid input",
-        description: "Please enter a valid positive number.",
-        variant: "destructive",
-      });
-      return;
+    // Allow empty or comma-separated numbers like "168, 167, 169"
+    if (trimmedValue !== "") {
+      const parts = trimmedValue.split(',').map(p => p.trim());
+      const allValid = parts.every(p => /^\d+$/.test(p));
+      if (!allValid) {
+        toast({
+          title: "Invalid input",
+          description: "Please enter valid numbers separated by commas (e.g., 168, 167, 169).",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     try {
       const { error } = await supabase
         .from("suras_cassette_data")
         .update({ 
-          cassette_count: numValue,
+          cassette_count: trimmedValue || null as any,
           updated_at: new Date().toISOString()
         })
         .eq("id", suraId);
@@ -100,7 +106,7 @@ const SurasPage = ({ isAdmin }: SurasPageProps) => {
       if (error) throw error;
       
       setSuras(prev => prev.map(s => 
-        s.id === suraId ? { ...s, cassette_count: numValue } : s
+        s.id === suraId ? { ...s, cassette_count: trimmedValue || null } : s
       ));
       setEditingId(null);
       toast({ title: "Saved" });
@@ -126,8 +132,8 @@ const SurasPage = ({ isAdmin }: SurasPageProps) => {
     handleSave(suraId);
   };
 
-  // Calculate total cassettes
-  const totalCassettes = suras.reduce((sum, s) => sum + (s.cassette_count || 0), 0);
+  // Calculate total suras that have cassette data
+  const totalFilledSuras = suras.filter(s => s.cassette_count && s.cassette_count.trim() !== "").length;
 
   if (loading) {
     return (
@@ -139,29 +145,31 @@ const SurasPage = ({ isAdmin }: SurasPageProps) => {
 
   return (
     <div className="max-w-full mx-auto px-2 pb-4">
-      {/* Header */}
+      {/* Header with Total Suras Counter */}
       <div className="text-center py-3">
-        <h2 className="text-xl font-bold text-foreground mb-1">ሱራዎች (Suras)</h2>
-        <p className="text-sm text-muted-foreground">
-          Total Cassettes: <span className="font-bold text-primary">{totalCassettes}</span>
-        </p>
+        <h2 className="text-xl font-bold text-foreground mb-2">ሱራዎች (Suras)</h2>
+        <div className="inline-flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-full">
+          <BookOpen className="w-5 h-5" />
+          <span className="font-bold text-lg">{totalFilledSuras} / 114</span>
+          <span className="text-sm opacity-90">Total Suras</span>
+        </div>
       </div>
 
       {/* Suras Table */}
       <div className="border border-border rounded-lg overflow-hidden">
         {/* Table Header */}
-        <div className="grid grid-cols-[50px_1fr_80px] bg-captured-header text-white font-bold text-sm">
+        <div className="grid grid-cols-[50px_1fr_1fr] bg-captured-header text-white font-bold text-sm">
           <div className="py-2 px-2 text-center border-r border-white/20">ተቁ</div>
           <div className="py-2 px-2 text-center border-r border-white/20">ሱራ</div>
           <div className="py-2 px-2 text-center">ካሴት</div>
         </div>
 
         {/* Table Body */}
-        <ScrollArea className="h-[calc(100vh-280px)]">
+        <ScrollArea className="h-[calc(100vh-300px)]">
           {suras.map((sura, index) => (
             <div 
               key={sura.id}
-              className={`grid grid-cols-[50px_1fr_80px] text-sm ${
+              className={`grid grid-cols-[50px_1fr_1fr] text-sm ${
                 index % 2 === 0 ? 'bg-card' : 'bg-muted/30'
               } border-b border-border last:border-b-0`}
             >
@@ -177,17 +185,17 @@ const SurasPage = ({ isAdmin }: SurasPageProps) => {
               >
                 {editingId === sura.id ? (
                   <Input
-                    type="number"
-                    min="0"
+                    type="text"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
                     onKeyDown={(e) => handleKeyDown(e, sura.id)}
                     onBlur={() => handleBlur(sura.id)}
                     autoFocus
-                    className="h-7 text-center text-sm p-1"
+                    placeholder="e.g., 168, 167"
+                    className="h-7 text-center text-xs p-1"
                   />
                 ) : (
-                  <span className={sura.cassette_count ? 'font-medium' : 'text-muted-foreground'}>
+                  <span className={sura.cassette_count ? 'font-medium text-xs' : 'text-muted-foreground'}>
                     {sura.cassette_count ?? '-'}
                   </span>
                 )}
