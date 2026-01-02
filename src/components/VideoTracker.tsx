@@ -7,6 +7,7 @@ import ResetPasswordDialog from "./ResetPasswordDialog";
 import StickyScrollHeader from "./StickyScrollHeader";
 import SummaryPage from "./SummaryPage";
 import HamburgerMenu from "./HamburgerMenu";
+import NotificationBell from "./NotificationBell";
 import { Button } from "@/components/ui/button";
 import { BarChart3, Grid3X3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -110,12 +111,8 @@ const VideoTracker = () => {
           setReEditedCells(trackerResult.data.re_edited_cells || Array(180).fill(false));
           setEditedPaidCells(trackerResult.data.edited_paid_cells || Array(180).fill(false));
           setReCapturedCells(trackerResult.data.re_captured_cells || Array(180).fill(false));
-        }
-        
-        // Load export count from localStorage
-        const savedExportCount = localStorage.getItem('exportCount');
-        if (savedExportCount) {
-          setExportCount(parseInt(savedExportCount, 10));
+          // Load export count from database
+          setExportCount((trackerResult.data as any).export_count || 0);
         }
         
         setComments(commentsResult.data || []);
@@ -150,6 +147,7 @@ const VideoTracker = () => {
             setReEditedCells(data.re_edited_cells || Array(180).fill(false));
             setEditedPaidCells(data.edited_paid_cells || Array(180).fill(false));
             setReCapturedCells(data.re_captured_cells || Array(180).fill(false));
+            setExportCount(data.export_count || 0);
           }
         }
       )
@@ -193,11 +191,36 @@ const VideoTracker = () => {
     };
   }, []);
 
-  // Handle export count change
-  const handleExportCountChange = (value: number) => {
+  // Handle export count change - save to database
+  const handleExportCountChange = async (value: number) => {
     setExportCount(value);
-    localStorage.setItem('exportCount', value.toString());
+    if (isAdmin) {
+      await supabase
+        .from("tracker_data")
+        .update({ export_count: value } as any)
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+    }
   };
+
+  // Navigate to specific cell and open comment
+  const navigateToComment = useCallback((cellIndex: number, section: string) => {
+    // Switch to progress tab first
+    setActiveTab("progress");
+    
+    // Wait for render, then scroll and open comment
+    setTimeout(() => {
+      const sectionRef = section === "edited" ? editedSectionRef : capturedSectionRef;
+      if (sectionRef.current) {
+        sectionRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        
+        // After scroll, open the comment dialog
+        setTimeout(() => {
+          setSelectedCellForComment({ index: cellIndex, section });
+          setCommentDialogOpen(true);
+        }, 500);
+      }
+    }, 100);
+  }, []);
 
   // EDITED SECTION - Main cell handlers
   const handleEditedMainMouseDown = useCallback((index: number) => {
@@ -451,9 +474,10 @@ const VideoTracker = () => {
           re_edited_cells: Array(180).fill(false),
           edited_paid_cells: Array(180).fill(false),
           re_captured_cells: Array(180).fill(false),
+          export_count: 0,
           updated_at: new Date().toISOString(),
           updated_by: user?.id,
-        })
+        } as any)
         .neq("id", "00000000-0000-0000-0000-000000000000");
 
       if (error) throw error;
@@ -465,7 +489,6 @@ const VideoTracker = () => {
       setEditedPaidCells(Array(180).fill(false));
       setReCapturedCells(Array(180).fill(false));
       setExportCount(0);
-      localStorage.setItem('exportCount', '0');
       
       toast({ title: "Data Reset", description: "All tracking data has been cleared." });
     } catch (error) {
@@ -554,7 +577,7 @@ const VideoTracker = () => {
       {/* Sticky Header */}
       <div className="sticky-header" ref={headerRef}>
         <div className="max-w-full mx-auto px-2 pt-2">
-          {/* Top bar with hamburger and title */}
+          {/* Top bar with hamburger, title, and notifications */}
           <div className="flex items-center gap-2 mb-2">
             <HamburgerMenu
               userName={user?.user_metadata?.display_name || user?.email || "User"}
@@ -582,6 +605,15 @@ const VideoTracker = () => {
               </div>
               <div className="islamic-pattern-right">☪</div>
             </div>
+
+            {/* Notification Bell */}
+            {user && (
+              <NotificationBell
+                userId={user.id}
+                comments={comments}
+                onNavigateToComment={navigateToComment}
+              />
+            )}
           </div>
 
           {/* Counter Boxes - Only show in progress tab */}

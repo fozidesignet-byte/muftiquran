@@ -70,6 +70,7 @@ export type Database = {
           captured_cells: boolean[]
           edited_cells: boolean[]
           edited_paid_cells: boolean[]
+          export_count: number
           id: string
           paid_cells: boolean[]
           re_captured_cells: boolean[]
@@ -81,6 +82,7 @@ export type Database = {
           captured_cells?: boolean[]
           edited_cells?: boolean[]
           edited_paid_cells?: boolean[]
+          export_count?: number
           id?: string
           paid_cells?: boolean[]
           re_captured_cells?: boolean[]
@@ -92,6 +94,7 @@ export type Database = {
           captured_cells?: boolean[]
           edited_cells?: boolean[]
           edited_paid_cells?: boolean[]
+          export_count?: number
           id?: string
           paid_cells?: boolean[]
           re_captured_cells?: boolean[]
@@ -128,6 +131,27 @@ export type Database = {
           changed_by_email?: string | null
           id?: string
           section?: string
+        }
+        Relationships: []
+      }
+      user_comment_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          last_seen_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_seen_at?: string
+          user_id?: string
         }
         Relationships: []
       }
